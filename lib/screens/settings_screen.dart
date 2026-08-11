@@ -57,40 +57,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<String?> _requestPin(String title) {
-    final controller = TextEditingController();
     return showDialog<String>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          obscureText: true,
-          keyboardType: TextInputType.number,
-          maxLength: 4,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          decoration: const InputDecoration(
-            labelText: '4-digit PIN',
-            counterText: '',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (controller.text.length == 4) {
-                Navigator.pop(context, controller.text);
-              }
-            },
-            child: const Text('Continue'),
-          ),
-        ],
-      ),
-    ).whenComplete(controller.dispose);
+      builder: (context) => _PinSetupDialog(title: title),
+    );
   }
 
   Future<void> _exportJournal() async {
@@ -346,5 +317,55 @@ class _SectionTitle extends StatelessWidget {
         fontWeight: FontWeight.w700,
       ),
     ),
+  );
+}
+
+class _PinSetupDialog extends StatefulWidget {
+  const _PinSetupDialog({required this.title});
+
+  final String title;
+
+  @override
+  State<_PinSetupDialog> createState() => _PinSetupDialogState();
+}
+
+class _PinSetupDialogState extends State<_PinSetupDialog> {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: Text(widget.title),
+    content: TextField(
+      controller: _controller,
+      autofocus: true,
+      obscureText: true,
+      keyboardType: TextInputType.number,
+      maxLength: 4,
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      decoration: const InputDecoration(
+        labelText: '4-digit PIN',
+        counterText: '',
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Cancel'),
+      ),
+      FilledButton(
+        onPressed: () {
+          if (_controller.text.length == 4) {
+            Navigator.pop(context, _controller.text);
+          }
+        },
+        child: const Text('Continue'),
+      ),
+    ],
   );
 }
