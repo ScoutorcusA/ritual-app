@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:ritual/controllers/journal_controller.dart';
 import 'package:ritual/models/meal_entry.dart';
+import 'package:ritual/screens/meal_editor_screen.dart';
 import 'package:ritual/screens/ritual_shell.dart';
 import 'package:ritual/theme/ritual_theme.dart';
 
@@ -93,6 +94,44 @@ void main() {
     await tester.tap(day);
     await tester.pumpAndSettle();
     expect(find.text('Breakfast'), findsOneWidget);
+  });
+
+  testWidgets('new-entry labels stay readable in dark mode', (tester) async {
+    final controller = JournalController(MemoryMealRepository());
+    await controller.initialize();
+    final darkTheme = ritualDarkTheme();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ritualTheme(),
+        darkTheme: darkTheme,
+        themeMode: ThemeMode.dark,
+        home: MealEditorScreen(
+          controller: controller,
+          imagePath: '/tmp/new-entry.jpg',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(ListView), const Offset(0, -500));
+    await tester.pumpAndSettle();
+    final mealChips = tester.widgetList<ChoiceChip>(find.byType(ChoiceChip));
+    expect(mealChips, hasLength(MealType.values.length));
+    for (final chip in mealChips) {
+      expect(
+        chip.labelStyle?.color,
+        chip.selected ? RitualColors.paper : darkTheme.colorScheme.onSurface,
+      );
+    }
+    await tester.scrollUntilVisible(
+      find.text('Happy'),
+      250,
+      scrollable: find.byType(Scrollable).last,
+    );
+    final feelingChip = tester.widget<FilterChip>(
+      find.widgetWithText(FilterChip, 'Happy'),
+    );
+    expect(feelingChip.labelStyle?.color, darkTheme.colorScheme.onSurface);
   });
 }
 

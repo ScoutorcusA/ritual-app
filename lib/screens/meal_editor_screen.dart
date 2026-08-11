@@ -221,6 +221,8 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.editing ? 'Edit moment' : 'New moment'),
@@ -255,11 +257,19 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
                 ChoiceChip(
                   label: Text(type.label),
                   selected: _mealType == type,
-                  selectedColor: RitualColors.ink,
+                  selectedColor: dark
+                      ? const Color(0xFF3B3A34)
+                      : RitualColors.ink,
+                  backgroundColor: colors.surface,
+                  checkmarkColor: RitualColors.paper,
+                  side: BorderSide(color: colors.outline),
                   labelStyle: TextStyle(
                     color: _mealType == type
                         ? RitualColors.paper
-                        : RitualColors.ink,
+                        : colors.onSurface,
+                    fontWeight: _mealType == type
+                        ? FontWeight.w700
+                        : FontWeight.w500,
                   ),
                   onSelected: (_) => setState(() => _mealType = type),
                 ),
@@ -282,6 +292,10 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
                   label: Text(feeling),
                   selected: _feelings.contains(feeling),
                   selectedColor: RitualColors.sage.withValues(alpha: 0.25),
+                  backgroundColor: colors.surface,
+                  checkmarkColor: colors.onSurface,
+                  side: BorderSide(color: colors.outline),
+                  labelStyle: TextStyle(color: colors.onSurface),
                   onSelected: (selected) => setState(() {
                     if (selected) {
                       _feelings.add(feeling);
@@ -315,7 +329,8 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: RitualColors.paper,
+                color: colors.surface,
+                border: Border.all(color: colors.outlineVariant),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
