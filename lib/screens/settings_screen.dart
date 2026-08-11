@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -81,7 +79,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted || savedPath == null) return;
       _message(
         '${result.entryCount} ${result.entryCount == 1 ? 'entry' : 'entries'} '
-        'exported to ${savedPath.split(Platform.pathSeparator).last}.',
+        'exported successfully.',
       );
     } on RitualArchiveException catch (error) {
       if (mounted) _message(error.message, error: true);
