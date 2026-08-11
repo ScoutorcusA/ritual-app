@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../controllers/settings_controller.dart';
 import '../theme/ritual_theme.dart';
@@ -16,6 +17,10 @@ class AppLockGate extends StatefulWidget {
 }
 
 class _AppLockGateState extends State<AppLockGate> {
+  static const _privacyChannel = MethodChannel(
+    'com.nishkamkhanna.ritual/privacy',
+  );
+
   bool _locked = false;
   bool _authenticating = false;
   String _pin = '';
@@ -23,6 +28,7 @@ class _AppLockGateState extends State<AppLockGate> {
   int _failedAttempts = 0;
   DateTime? _blockedUntil;
   Timer? _timer;
+  Timer? _backgroundLockTimer;
   late final AppLifecycleListener _lifecycleListener;
   bool _lockOnResume = false;
 
@@ -37,6 +43,7 @@ class _AppLockGateState extends State<AppLockGate> {
     );
     widget.settings.addListener(_settingsChanged);
     _locked = widget.settings.lockEnabled;
+    _syncPlatformPrivacyShield();
     if (_locked && widget.settings.lockMode == AppLockMode.device) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _authenticate());
     }
@@ -55,29 +62,58 @@ class _AppLockGateState extends State<AppLockGate> {
   @override
   void dispose() {
     _timer?.cancel();
+    _backgroundLockTimer?.cancel();
     _lifecycleListener.dispose();
     widget.settings.removeListener(_settingsChanged);
     super.dispose();
   }
 
   void _settingsChanged() {
-    if (!widget.settings.lockEnabled && _locked) {
-      setState(() => _locked = false);
+    _syncPlatformPrivacyShield();
+    if (!widget.settings.lockEnabled) {
+      _backgroundLockTimer?.cancel();
+      _backgroundLockTimer = null;
+      _lockOnResume = false;
+      if (_locked) setState(() => _locked = false);
     }
   }
 
   void _markBackgrounded() {
-    if (!widget.settings.lockEnabled || _authenticating) return;
+    if (!widget.settings.lockEnabled) return;
     _lockOnResume = true;
+    if (_locked || _backgroundLockTimer != null) return;
+    _backgroundLockTimer = Timer(const Duration(seconds: 1), () {
+      _backgroundLockTimer = null;
+      if (!mounted ||
+          !widget.settings.lockEnabled ||
+          WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+        return;
+      }
+      setState(() {
+        _locked = true;
+        _pin = '';
+        _message = null;
+      });
+    });
   }
 
   void _resume() {
     if (!_lockOnResume || !widget.settings.lockEnabled || !mounted) return;
+    _backgroundLockTimer?.cancel();
+    _backgroundLockTimer = null;
     _lockOnResume = false;
-    setState(() => _locked = true);
-    if (widget.settings.lockMode == AppLockMode.device) {
+    if (!_locked) return;
+    if (widget.settings.lockMode == AppLockMode.device && !_authenticating) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _authenticate());
     }
+  }
+
+  void _syncPlatformPrivacyShield() {
+    unawaited(
+      _privacyChannel
+          .invokeMethod<void>('setAppLockEnabled', widget.settings.lockEnabled)
+          .catchError((Object _, StackTrace _) {}),
+    );
   }
 
   Future<void> _authenticate() async {
@@ -264,9 +300,15 @@ class _AppLockGateState extends State<AppLockGate> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        ExcludeSemantics(
-          excluding: _locked,
-          child: IgnorePointer(ignoring: _locked, child: widget.child),
+        Offstage(
+          offstage: _locked,
+          child: TickerMode(
+            enabled: !_locked,
+            child: ExcludeSemantics(
+              excluding: _locked,
+              child: IgnorePointer(ignoring: _locked, child: widget.child),
+            ),
+          ),
         ),
         if (_locked) Positioned.fill(child: lockScreen),
       ],
