@@ -18,6 +18,9 @@ abstract class MealRepository {
   Future<int> loadBestStreak();
   Future<void> saveBestStreak(int value);
   Future<List<MealEntry>> importEntries(List<MealImport> entries);
+  Future<Map<String, int>> loadDailyHighlights();
+  Future<void> saveDailyHighlight(String dayKey, int entryId);
+  Future<void> deleteDailyHighlight(String dayKey);
 }
 
 class SqliteMealRepository implements MealRepository {
@@ -28,7 +31,7 @@ class SqliteMealRepository implements MealRepository {
     final databasePath = p.join(await getDatabasesPath(), 'ritual.db');
     _database = await openDatabase(
       databasePath,
-      version: 3,
+      version: 4,
       onCreate: (db, _) async {
         await db.execute('''
           CREATE TABLE meals(
@@ -50,6 +53,12 @@ class SqliteMealRepository implements MealRepository {
             value TEXT NOT NULL
           )
         ''');
+        await db.execute('''
+          CREATE TABLE daily_highlights(
+            day_key TEXT PRIMARY KEY,
+            meal_id INTEGER NOT NULL
+          )
+        ''');
         await db.execute(
           'CREATE UNIQUE INDEX meals_import_fingerprint '
           'ON meals(import_fingerprint) WHERE import_fingerprint IS NOT NULL',
@@ -67,6 +76,14 @@ class SqliteMealRepository implements MealRepository {
             'CREATE UNIQUE INDEX meals_import_fingerprint '
             'ON meals(import_fingerprint) WHERE import_fingerprint IS NOT NULL',
           );
+        }
+        if (oldVersion < 4) {
+          await db.execute('''
+            CREATE TABLE daily_highlights(
+              day_key TEXT PRIMARY KEY,
+              meal_id INTEGER NOT NULL
+            )
+          ''');
         }
       },
     );
@@ -161,6 +178,31 @@ class SqliteMealRepository implements MealRepository {
       'key': 'best_streak',
       'value': '$value',
     }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  @override
+  Future<Map<String, int>> loadDailyHighlights() async {
+    final rows = await (await _db).query('daily_highlights');
+    return {
+      for (final row in rows) row['day_key'] as String: row['meal_id'] as int,
+    };
+  }
+
+  @override
+  Future<void> saveDailyHighlight(String dayKey, int entryId) async {
+    await (await _db).insert('daily_highlights', {
+      'day_key': dayKey,
+      'meal_id': entryId,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  @override
+  Future<void> deleteDailyHighlight(String dayKey) async {
+    await (await _db).delete(
+      'daily_highlights',
+      where: 'day_key = ?',
+      whereArgs: [dayKey],
+    );
   }
 
   @override

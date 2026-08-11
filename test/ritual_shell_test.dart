@@ -56,4 +56,13 @@ class _MemoryRepository implements MealRepository {
   @override
   Future<List<MealEntry>> importEntries(List<MealImport> entries) async =>
       const [];
+
+  @override
+  Future<Map<String, int>> loadDailyHighlights() => Future.value(const {});
+
+  @override
+  Future<void> saveDailyHighlight(String dayKey, int entryId) async {}
+
+  @override
+  Future<void> deleteDailyHighlight(String dayKey) async {}
 }

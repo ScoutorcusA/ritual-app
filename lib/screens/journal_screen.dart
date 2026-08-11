@@ -3,11 +3,11 @@ import 'package:intl/intl.dart';
 
 import '../controllers/journal_controller.dart';
 import '../insights/insight_engine.dart';
-import '../models/meal_entry.dart';
 import '../theme/ritual_theme.dart';
-import '../widgets/meal_card.dart';
+import '../utils/journal_days.dart';
+import '../widgets/daily_journal_card.dart';
 import '../widgets/insight_card.dart';
-import 'entry_detail_screen.dart';
+import 'daily_journal_screen.dart';
 
 class JournalScreen extends StatelessWidget {
   const JournalScreen({
@@ -31,7 +31,7 @@ class JournalScreen extends StatelessWidget {
           return _JournalError(message: controller.error!);
         }
 
-        final grouped = _groupByDay(controller.entries);
+        final grouped = groupEntriesByDay(controller.entries);
         final insights = InsightEngine.build(controller.entries);
         return CustomScrollView(
           key: const PageStorageKey('journal-scroll'),
@@ -49,34 +49,21 @@ class JournalScreen extends StatelessWidget {
               )
             else
               for (final (groupIndex, group) in grouped.indexed) ...[
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
-                    child: Text(
-                      _dayLabel(group.day),
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                  ),
-                ),
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                  sliver: SliverList.separated(
-                    itemCount: group.entries.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 18),
-                    itemBuilder: (context, index) {
-                      final entry = group.entries[index];
-                      return MealCard(
-                        entry: entry,
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => EntryDetailScreen(
-                              controller: controller,
-                              entryId: entry.id,
-                            ),
+                  padding: const EdgeInsets.fromLTRB(20, 28, 20, 10),
+                  sliver: SliverToBoxAdapter(
+                    child: DailyJournalCard(
+                      day: group.day,
+                      entries: group.entries,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => DailyJournalScreen(
+                            controller: controller,
+                            day: group.day,
                           ),
                         ),
-                      );
-                    },
+                      ),
+                    ),
                   ),
                 ),
                 if (groupIndex < insights.length)
@@ -92,29 +79,6 @@ class JournalScreen extends StatelessWidget {
         );
       },
     );
-  }
-
-  List<_DayGroup> _groupByDay(List<MealEntry> entries) {
-    final groups = <DateTime, List<MealEntry>>{};
-    for (final entry in entries) {
-      final day = DateTime(
-        entry.createdAt.year,
-        entry.createdAt.month,
-        entry.createdAt.day,
-      );
-      groups.putIfAbsent(day, () => []).add(entry);
-    }
-    return groups.entries
-        .map((group) => _DayGroup(day: group.key, entries: group.value))
-        .toList();
-  }
-
-  String _dayLabel(DateTime day) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    if (day == today) return 'Today';
-    if (day == today.subtract(const Duration(days: 1))) return 'Yesterday';
-    return DateFormat('EEEE, MMMM d').format(day);
   }
 }
 
@@ -251,10 +215,4 @@ class _JournalError extends StatelessWidget {
       child: Text(message, textAlign: TextAlign.center),
     ),
   );
-}
-
-class _DayGroup {
-  const _DayGroup({required this.day, required this.entries});
-  final DateTime day;
-  final List<MealEntry> entries;
 }

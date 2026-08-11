@@ -4,7 +4,8 @@ import 'package:image_picker/image_picker.dart';
 import '../controllers/journal_controller.dart';
 import '../controllers/settings_controller.dart';
 import '../theme/ritual_theme.dart';
-import 'gallery_screen.dart';
+import '../widgets/streak_celebration_overlay.dart';
+import 'browse_screen.dart';
 import 'journal_screen.dart';
 import 'meal_editor_screen.dart';
 import 'settings_screen.dart';
@@ -102,50 +103,21 @@ class _RitualShellState extends State<RitualShell> {
 
   Future<void> _showStreakMoment() {
     final streak = widget.controller.currentStreak;
-    return showDialog<void>(
+    return showGeneralDialog<void>(
       context: context,
-      builder: (context) => Dialog(
-        insetPadding: const EdgeInsets.symmetric(horizontal: 28),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(28, 34, 28, 26),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 78,
-                height: 78,
-                decoration: BoxDecoration(
-                  color: RitualColors.honey.withValues(alpha: 0.18),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.local_fire_department_rounded,
-                  size: 42,
-                  color: RitualColors.honey,
-                ),
-              ),
-              const SizedBox(height: 22),
-              Text(
-                streak == 1
-                    ? 'A ritual begins'
-                    : '$streak days, gently gathered',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'One meal is enough for today. Come back to notice, not to be perfect.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Keep going gently'),
-              ),
-            ],
+      barrierDismissible: false,
+      barrierLabel: 'Streak updated',
+      barrierColor: Colors.transparent,
+      transitionDuration: const Duration(milliseconds: 320),
+      pageBuilder: (_, _, _) => StreakCelebrationOverlay(streak: streak),
+      transitionBuilder: (_, animation, _, child) => FadeTransition(
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        child: ScaleTransition(
+          scale: Tween(begin: 0.92, end: 1.0).animate(
+            CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
           ),
+          alignment: Alignment.topCenter,
+          child: child,
         ),
       ),
     );
@@ -174,7 +146,7 @@ class _RitualShellState extends State<RitualShell> {
               }
             },
           ),
-          GalleryScreen(controller: widget.controller),
+          BrowseScreen(controller: widget.controller),
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
@@ -211,9 +183,9 @@ class _RitualShellState extends State<RitualShell> {
               const SizedBox(width: 82),
               Expanded(
                 child: _NavItem(
-                  icon: Icons.grid_view_outlined,
-                  selectedIcon: Icons.grid_view_rounded,
-                  label: 'Gallery',
+                  icon: Icons.collections_bookmark_outlined,
+                  selectedIcon: Icons.collections_bookmark_rounded,
+                  label: 'Browse',
                   selected: _selectedIndex == 1,
                   onTap: () => setState(() => _selectedIndex = 1),
                 ),
