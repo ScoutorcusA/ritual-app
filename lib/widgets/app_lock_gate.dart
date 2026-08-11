@@ -15,7 +15,7 @@ class AppLockGate extends StatefulWidget {
   State<AppLockGate> createState() => _AppLockGateState();
 }
 
-class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
+class _AppLockGateState extends State<AppLockGate> {
   bool _locked = false;
   bool _authenticating = false;
   String _pin = '';
@@ -23,11 +23,18 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
   int _failedAttempts = 0;
   DateTime? _blockedUntil;
   Timer? _timer;
+  late final AppLifecycleListener _lifecycleListener;
+  bool _lockOnResume = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
+    _lifecycleListener = AppLifecycleListener(
+      onInactive: _markBackgrounded,
+      onHide: _markBackgrounded,
+      onPause: _markBackgrounded,
+      onResume: _resume,
+    );
     widget.settings.addListener(_settingsChanged);
     _locked = widget.settings.lockEnabled;
     if (_locked && widget.settings.lockMode == AppLockMode.device) {
@@ -48,8 +55,8 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
   @override
   void dispose() {
     _timer?.cancel();
+    _lifecycleListener.dispose();
     widget.settings.removeListener(_settingsChanged);
-    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -59,17 +66,17 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
     }
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
+  void _markBackgrounded() {
     if (!widget.settings.lockEnabled || _authenticating) return;
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.hidden) {
-      if (mounted) setState(() => _locked = true);
-    } else if (state == AppLifecycleState.resumed &&
-        _locked &&
-        widget.settings.lockMode == AppLockMode.device) {
-      _authenticate();
+    _lockOnResume = true;
+  }
+
+  void _resume() {
+    if (!_lockOnResume || !widget.settings.lockEnabled || !mounted) return;
+    _lockOnResume = false;
+    setState(() => _locked = true);
+    if (widget.settings.lockMode == AppLockMode.device) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _authenticate());
     }
   }
 
@@ -134,10 +141,9 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    if (!_locked) return widget.child;
     final pinMode = widget.settings.lockMode == AppLockMode.pin;
     final remaining = _blockedUntil?.difference(DateTime.now()).inSeconds;
-    return Scaffold(
+    final lockScreen = Scaffold(
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -254,6 +260,16 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
           ),
         ),
       ),
+    );
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        ExcludeSemantics(
+          excluding: _locked,
+          child: IgnorePointer(ignoring: _locked, child: widget.child),
+        ),
+        if (_locked) Positioned.fill(child: lockScreen),
+      ],
     );
   }
 }
