@@ -2,15 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../controllers/journal_controller.dart';
+import '../controllers/settings_controller.dart';
 import '../theme/ritual_theme.dart';
 import 'gallery_screen.dart';
 import 'journal_screen.dart';
 import 'meal_editor_screen.dart';
+import 'settings_screen.dart';
 
 class RitualShell extends StatefulWidget {
-  const RitualShell({super.key, required this.controller});
+  const RitualShell({super.key, required this.controller, this.settings});
 
   final JournalController controller;
+  final SettingsController? settings;
 
   @override
   State<RitualShell> createState() => _RitualShellState();
@@ -155,7 +158,22 @@ class _RitualShellState extends State<RitualShell> {
       body: IndexedStack(
         index: _selectedIndex,
         children: [
-          JournalScreen(controller: widget.controller),
+          JournalScreen(
+            controller: widget.controller,
+            onSettings: () {
+              final settings = widget.settings;
+              if (settings != null) {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => SettingsScreen(
+                      settings: settings,
+                      journal: widget.controller,
+                    ),
+                  ),
+                );
+              }
+            },
+          ),
           GalleryScreen(controller: widget.controller),
         ],
       ),
@@ -170,7 +188,7 @@ class _RitualShellState extends State<RitualShell> {
             : const Icon(Icons.add_a_photo_outlined, size: 28),
       ),
       bottomNavigationBar: BottomAppBar(
-        color: RitualColors.paper,
+        color: Theme.of(context).colorScheme.surface,
         elevation: 10,
         shadowColor: Colors.black26,
         shape: const CircularNotchedRectangle(),
@@ -234,16 +252,20 @@ class _NavItem extends StatelessWidget {
           Icon(
             selected ? selectedIcon : icon,
             color: selected
-                ? RitualColors.ink
-                : RitualColors.ink.withValues(alpha: 0.48),
+                ? Theme.of(context).colorScheme.onSurface
+                : Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.48),
           ),
           const SizedBox(height: 3),
           Text(
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: selected
-                  ? RitualColors.ink
-                  : RitualColors.ink.withValues(alpha: 0.48),
+                  ? Theme.of(context).colorScheme.onSurface
+                  : Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.48),
               fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
             ),
           ),

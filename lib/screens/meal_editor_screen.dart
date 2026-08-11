@@ -1,5 +1,9 @@
+import 'dart:async';
+
+import 'package:geocoding/geocoding.dart';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:flutter/services.dart';
+import 'package:geolocator_platform_interface/geolocator_platform_interface.dart';
 
 import '../controllers/journal_controller.dart';
 import '../models/meal_entry.dart';
@@ -30,6 +34,7 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
   late TextEditingController _noteController;
   double? _latitude;
   double? _longitude;
+  String? _locationLabel;
   bool _findingLocation = false;
   bool _saving = false;
   String? _locationMessage;
@@ -43,6 +48,7 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
     _noteController = TextEditingController(text: entry?.note ?? '');
     _latitude = entry?.latitude;
     _longitude = entry?.longitude;
+    _locationLabel = entry?.locationLabel;
   }
 
   @override
@@ -65,14 +71,15 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
       _locationMessage = null;
     });
     try {
-      if (!await Geolocator.isLocationServiceEnabled()) {
+      final geolocator = GeolocatorPlatform.instance;
+      if (!await geolocator.isLocationServiceEnabled()) {
         throw const _LocationIssue(
           'Turn on Location Services, then try again.',
         );
       }
-      var permission = await Geolocator.checkPermission();
+      var permission = await geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
+        permission = await geolocator.requestPermission();
       }
       if (permission == LocationPermission.denied) {
         throw const _LocationIssue('Location permission was not granted.');
@@ -82,24 +89,87 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
           'Location is blocked for Ritual. You can enable it in Android settings.',
         );
       }
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.medium,
-          timeLimit: Duration(seconds: 12),
-        ),
-      );
+      final lastKnown = await geolocator.getLastKnownPosition();
+      Position position;
+      var usedLastKnown = false;
+      try {
+        position = await geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.medium,
+            timeLimit: Duration(seconds: 30),
+          ),
+        );
+      } on TimeoutException {
+        if (lastKnown == null) {
+          throw const _LocationIssue(
+            'Android did not find a location within 30 seconds. Try near a '
+            'window, or confirm that Location is on in Android settings.',
+          );
+        }
+        position = lastKnown;
+        usedLastKnown = true;
+      } on PlatformException {
+        if (lastKnown == null) rethrow;
+        position = lastKnown;
+        usedLastKnown = true;
+      }
+      String? label;
+      try {
+        final geocoder = Geocoding();
+        if (await geocoder.isPresent()) {
+          final places = await geocoder
+              .placemarkFromCoordinates(position.latitude, position.longitude)
+              .timeout(const Duration(seconds: 8));
+          if (places.isNotEmpty) {
+            final place = places.first;
+            label = _firstNonEmpty([
+              place.administrativeArea,
+              place.locality,
+              place.subAdministrativeArea,
+              place.country,
+            ]);
+          }
+        }
+      } catch (_) {
+        // Coordinates remain useful even if Android's geocoder is unavailable.
+      }
       if (!mounted) return;
       setState(() {
         _latitude = position.latitude;
         _longitude = position.longitude;
+        _locationLabel = label;
+        if (usedLastKnown) {
+          _locationMessage =
+              'Using Android’s last known location because a '
+              'fresh fix was not available.';
+        } else if (label == null) {
+          _locationMessage =
+              'Location added. Android could not name this place, '
+              'so Ritual saved the coordinates.';
+        }
       });
     } on _LocationIssue catch (error) {
       if (mounted) setState(() => _locationMessage = error.message);
-    } catch (_) {
+    } on LocationServiceDisabledException {
+      if (mounted) {
+        setState(() => _locationMessage = 'Android Location Services are off.');
+      }
+    } on PermissionDeniedException {
+      if (mounted) {
+        setState(() => _locationMessage = 'Android denied location access.');
+      }
+    } on PlatformException catch (error) {
       if (mounted) {
         setState(
-          () =>
-              _locationMessage = 'Your location could not be added right now.',
+          () => _locationMessage =
+              'Android could not provide a location (${error.code}).',
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(
+          () => _locationMessage =
+              'Your location could not be added right now (${error.runtimeType}).',
         );
       }
     } finally {
@@ -118,6 +188,7 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
           note: _noteController.text.trim(),
           latitude: _latitude,
           longitude: _longitude,
+          locationLabel: _locationLabel,
           clearLocation: _latitude == null || _longitude == null,
         );
         await widget.controller.updateEntry(updated);
@@ -132,6 +203,7 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
             createdAt: DateTime.now(),
             latitude: _latitude,
             longitude: _longitude,
+            locationLabel: _locationLabel,
           ),
         );
         if (mounted) Navigator.of(context).pop(result);
@@ -255,7 +327,8 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      '${_latitude!.toStringAsFixed(4)}, ${_longitude!.toStringAsFixed(4)}',
+                      _locationLabel ??
+                          '${_latitude!.toStringAsFixed(4)}, ${_longitude!.toStringAsFixed(4)}',
                     ),
                   ),
                   IconButton(
@@ -263,6 +336,8 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
                     onPressed: () => setState(() {
                       _latitude = null;
                       _longitude = null;
+                      _locationLabel = null;
+                      _locationMessage = null;
                     }),
                     icon: const Icon(Icons.close),
                   ),
@@ -304,6 +379,13 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
         ],
       ),
     );
+  }
+
+  String? _firstNonEmpty(List<String?> values) {
+    for (final value in values) {
+      if (value != null && value.trim().isNotEmpty) return value.trim();
+    }
+    return null;
   }
 }
 

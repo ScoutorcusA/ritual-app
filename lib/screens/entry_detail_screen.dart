@@ -113,8 +113,9 @@ class EntryDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '${currentEntry.latitude!.toStringAsFixed(4)}, '
-                      '${currentEntry.longitude!.toStringAsFixed(4)}',
+                      currentEntry.locationLabel ??
+                          '${currentEntry.latitude!.toStringAsFixed(4)}, '
+                              '${currentEntry.longitude!.toStringAsFixed(4)}',
                     ),
                   ],
                 ),

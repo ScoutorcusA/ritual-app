@@ -11,49 +11,61 @@ abstract final class RitualColors {
 }
 
 ThemeData ritualTheme() {
+  return _ritualTheme(Brightness.light);
+}
+
+ThemeData ritualDarkTheme() {
+  return _ritualTheme(Brightness.dark);
+}
+
+ThemeData _ritualTheme(Brightness brightness) {
+  final dark = brightness == Brightness.dark;
+  final surface = dark ? const Color(0xFF25241F) : RitualColors.paper;
+  final background = dark ? const Color(0xFF191915) : RitualColors.cream;
+  final onSurface = dark ? const Color(0xFFF2ECE1) : RitualColors.ink;
   final scheme =
       ColorScheme.fromSeed(
         seedColor: RitualColors.sage,
-        brightness: Brightness.light,
-        surface: RitualColors.paper,
+        brightness: brightness,
+        surface: surface,
       ).copyWith(
-        primary: RitualColors.ink,
+        primary: dark ? const Color(0xFFD4DDC9) : RitualColors.ink,
         secondary: RitualColors.terracotta,
         tertiary: RitualColors.honey,
-        surface: RitualColors.paper,
-        onSurface: RitualColors.ink,
-        outline: const Color(0xFFC9C2B5),
+        surface: surface,
+        onSurface: onSurface,
+        outline: dark ? const Color(0xFF716E64) : const Color(0xFFC9C2B5),
       );
 
   final base = ThemeData(
     useMaterial3: true,
     colorScheme: scheme,
-    scaffoldBackgroundColor: RitualColors.cream,
+    scaffoldBackgroundColor: background,
   );
   return base.copyWith(
     textTheme: base.textTheme.copyWith(
       displaySmall: base.textTheme.displaySmall?.copyWith(
-        color: RitualColors.ink,
+        color: onSurface,
         fontWeight: FontWeight.w500,
         letterSpacing: -1.4,
         height: 1.05,
       ),
       headlineMedium: base.textTheme.headlineMedium?.copyWith(
-        color: RitualColors.ink,
+        color: onSurface,
         fontWeight: FontWeight.w500,
         letterSpacing: -0.8,
       ),
       titleLarge: base.textTheme.titleLarge?.copyWith(
-        color: RitualColors.ink,
+        color: onSurface,
         fontWeight: FontWeight.w600,
         letterSpacing: -0.3,
       ),
       bodyLarge: base.textTheme.bodyLarge?.copyWith(
-        color: RitualColors.ink,
+        color: onSurface,
         height: 1.45,
       ),
       bodyMedium: base.textTheme.bodyMedium?.copyWith(
-        color: RitualColors.ink.withValues(alpha: 0.78),
+        color: onSurface.withValues(alpha: 0.78),
         height: 1.45,
       ),
       labelLarge: base.textTheme.labelLarge?.copyWith(
@@ -67,26 +79,26 @@ ThemeData ritualTheme() {
       elevation: 0,
       centerTitle: false,
     ),
-    cardTheme: const CardThemeData(
-      color: RitualColors.paper,
+    cardTheme: CardThemeData(
+      color: surface,
       elevation: 0,
       margin: EdgeInsets.zero,
     ),
     chipTheme: base.chipTheme.copyWith(
-      side: const BorderSide(color: Color(0xFFD5CEC1)),
+      side: BorderSide(color: scheme.outline),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(99)),
-      labelStyle: const TextStyle(color: RitualColors.ink),
+      labelStyle: TextStyle(color: onSurface),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: RitualColors.paper,
+      fillColor: surface,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(20),
         borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(20),
-        borderSide: const BorderSide(color: RitualColors.mist),
+        borderSide: BorderSide(color: scheme.outlineVariant),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(20),

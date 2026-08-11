@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 enum MealType { breakfast, lunch, dinner, snack }
 
 extension MealTypeLabel on MealType {
@@ -17,6 +19,7 @@ extension MealTypeLabel on MealType {
 }
 
 const feelingLabels = <String>[
+  'Happy',
   'Calm',
   'Energized',
   'Comforted',
@@ -37,6 +40,7 @@ class MealEntry {
     required this.createdAt,
     this.latitude,
     this.longitude,
+    this.locationLabel,
   });
 
   final int id;
@@ -47,6 +51,7 @@ class MealEntry {
   final DateTime createdAt;
   final double? latitude;
   final double? longitude;
+  final String? locationLabel;
 
   bool get hasLocation => latitude != null && longitude != null;
 
@@ -56,6 +61,7 @@ class MealEntry {
     String? note,
     double? latitude,
     double? longitude,
+    String? locationLabel,
     bool clearLocation = false,
   }) {
     return MealEntry(
@@ -67,6 +73,7 @@ class MealEntry {
       createdAt: createdAt,
       latitude: clearLocation ? null : latitude ?? this.latitude,
       longitude: clearLocation ? null : longitude ?? this.longitude,
+      locationLabel: clearLocation ? null : locationLabel ?? this.locationLabel,
     );
   }
 }
@@ -80,6 +87,7 @@ class MealDraft {
     required this.createdAt,
     this.latitude,
     this.longitude,
+    this.locationLabel,
   });
 
   final String imagePath;
@@ -89,4 +97,19 @@ class MealDraft {
   final DateTime createdAt;
   final double? latitude;
   final double? longitude;
+  final String? locationLabel;
+}
+
+class MealImport {
+  const MealImport({
+    required this.draft,
+    required this.photoBytes,
+    required this.photoExtension,
+    required this.fingerprint,
+  });
+
+  final MealDraft draft;
+  final Uint8List photoBytes;
+  final String photoExtension;
+  final String fingerprint;
 }

@@ -2,15 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../controllers/journal_controller.dart';
+import '../insights/insight_engine.dart';
 import '../models/meal_entry.dart';
 import '../theme/ritual_theme.dart';
 import '../widgets/meal_card.dart';
+import '../widgets/insight_card.dart';
 import 'entry_detail_screen.dart';
 
 class JournalScreen extends StatelessWidget {
-  const JournalScreen({super.key, required this.controller});
+  const JournalScreen({
+    super.key,
+    required this.controller,
+    required this.onSettings,
+  });
 
   final JournalController controller;
+  final VoidCallback onSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -25,17 +32,23 @@ class JournalScreen extends StatelessWidget {
         }
 
         final grouped = _groupByDay(controller.entries);
+        final insights = InsightEngine.build(controller.entries);
         return CustomScrollView(
           key: const PageStorageKey('journal-scroll'),
           slivers: [
-            SliverToBoxAdapter(child: _JournalHeader(controller: controller)),
+            SliverToBoxAdapter(
+              child: _JournalHeader(
+                controller: controller,
+                onSettings: onSettings,
+              ),
+            ),
             if (controller.entries.isEmpty)
               const SliverFillRemaining(
                 hasScrollBody: false,
                 child: _EmptyJournal(),
               )
             else
-              for (final group in grouped) ...[
+              for (final (groupIndex, group) in grouped.indexed) ...[
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
@@ -66,6 +79,13 @@ class JournalScreen extends StatelessWidget {
                     },
                   ),
                 ),
+                if (groupIndex < insights.length)
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(20, 6, 20, 6),
+                    sliver: SliverToBoxAdapter(
+                      child: InsightCard(insight: insights[groupIndex]),
+                    ),
+                  ),
               ],
             const SliverToBoxAdapter(child: SizedBox(height: 120)),
           ],
@@ -99,9 +119,10 @@ class JournalScreen extends StatelessWidget {
 }
 
 class _JournalHeader extends StatelessWidget {
-  const _JournalHeader({required this.controller});
+  const _JournalHeader({required this.controller, required this.onSettings});
 
   final JournalController controller;
+  final VoidCallback onSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -112,13 +133,26 @@ class _JournalHeader extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              DateFormat('EEEE, MMMM d').format(DateTime.now()).toUpperCase(),
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: RitualColors.sage,
-                letterSpacing: 1.5,
-                fontWeight: FontWeight.w700,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    DateFormat(
+                      'EEEE, MMMM d',
+                    ).format(DateTime.now()).toUpperCase(),
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: RitualColors.sage,
+                      letterSpacing: 1.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Settings',
+                  onPressed: onSettings,
+                  icon: const Icon(Icons.settings_outlined),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             Text(

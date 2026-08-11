@@ -52,4 +52,8 @@ class _MemoryRepository implements MealRepository {
 
   @override
   Future<void> updateEntry(MealEntry entry) async {}
+
+  @override
+  Future<List<MealEntry>> importEntries(List<MealImport> entries) async =>
+      const [];
 }

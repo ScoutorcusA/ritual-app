@@ -75,6 +75,16 @@ class JournalController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<int> importEntries(List<MealImport> entries) async {
+    final imported = await _repository.importEntries(entries);
+    if (imported.isEmpty) return 0;
+    _entries = [...imported, ..._entries]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    await _recalculateStreak();
+    notifyListeners();
+    return imported.length;
+  }
+
   Future<void> _recalculateStreak() async {
     final stats = StreakCalculator.calculate(
       _entries.map((entry) => entry.createdAt),

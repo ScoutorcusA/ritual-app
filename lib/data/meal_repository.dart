@@ -17,6 +17,7 @@ abstract class MealRepository {
   Future<void> discardPhoto(String imagePath);
   Future<int> loadBestStreak();
   Future<void> saveBestStreak(int value);
+  Future<List<MealEntry>> importEntries(List<MealImport> entries);
 }
 
 class SqliteMealRepository implements MealRepository {
@@ -27,7 +28,7 @@ class SqliteMealRepository implements MealRepository {
     final databasePath = p.join(await getDatabasesPath(), 'ritual.db');
     _database = await openDatabase(
       databasePath,
-      version: 1,
+      version: 3,
       onCreate: (db, _) async {
         await db.execute('''
           CREATE TABLE meals(
@@ -38,7 +39,9 @@ class SqliteMealRepository implements MealRepository {
             note TEXT NOT NULL,
             created_at INTEGER NOT NULL,
             latitude REAL,
-            longitude REAL
+            longitude REAL,
+            location_label TEXT,
+            import_fingerprint TEXT
           )
         ''');
         await db.execute('''
@@ -47,6 +50,24 @@ class SqliteMealRepository implements MealRepository {
             value TEXT NOT NULL
           )
         ''');
+        await db.execute(
+          'CREATE UNIQUE INDEX meals_import_fingerprint '
+          'ON meals(import_fingerprint) WHERE import_fingerprint IS NOT NULL',
+        );
+      },
+      onUpgrade: (db, oldVersion, _) async {
+        if (oldVersion < 2) {
+          await db.execute('ALTER TABLE meals ADD COLUMN location_label TEXT');
+        }
+        if (oldVersion < 3) {
+          await db.execute(
+            'ALTER TABLE meals ADD COLUMN import_fingerprint TEXT',
+          );
+          await db.execute(
+            'CREATE UNIQUE INDEX meals_import_fingerprint '
+            'ON meals(import_fingerprint) WHERE import_fingerprint IS NOT NULL',
+          );
+        }
       },
     );
     return _database!;
@@ -71,6 +92,7 @@ class SqliteMealRepository implements MealRepository {
       createdAt: draft.createdAt,
       latitude: draft.latitude,
       longitude: draft.longitude,
+      locationLabel: draft.locationLabel,
     );
   }
 
@@ -141,6 +163,79 @@ class SqliteMealRepository implements MealRepository {
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
+  @override
+  Future<List<MealEntry>> importEntries(List<MealImport> entries) async {
+    if (entries.isEmpty) return const [];
+    final db = await _db;
+    final fingerprintRows = await db.query(
+      'meals',
+      columns: ['import_fingerprint'],
+      where: 'import_fingerprint IS NOT NULL',
+    );
+    final existing = fingerprintRows
+        .map((row) => row['import_fingerprint'] as String)
+        .toSet();
+    final pending = entries
+        .where((entry) => !existing.contains(entry.fingerprint))
+        .toList(growable: false);
+    if (pending.isEmpty) return const [];
+
+    final documents = await getApplicationDocumentsDirectory();
+    final photos = Directory(p.join(documents.path, 'ritual_photos'));
+    await photos.create(recursive: true);
+    final createdFiles = <File>[];
+    final prepared = <({MealImport source, String path})>[];
+    try {
+      for (var index = 0; index < pending.length; index++) {
+        final source = pending[index];
+        final path = p.join(
+          photos.path,
+          'import_${DateTime.now().microsecondsSinceEpoch}_$index'
+          '${source.photoExtension}',
+        );
+        final file = File(path);
+        await file.writeAsBytes(source.photoBytes, flush: true);
+        createdFiles.add(file);
+        prepared.add((source: source, path: path));
+      }
+
+      final imported = await db.transaction((transaction) async {
+        final result = <MealEntry>[];
+        for (final item in prepared) {
+          final draft = item.source.draft;
+          final values = _draftToRow(draft)
+            ..['image_path'] = item.path
+            ..['import_fingerprint'] = item.source.fingerprint;
+          final id = await transaction.insert('meals', values);
+          result.add(
+            MealEntry(
+              id: id,
+              imagePath: item.path,
+              mealType: draft.mealType,
+              feelings: List.unmodifiable(draft.feelings),
+              note: draft.note,
+              createdAt: draft.createdAt,
+              latitude: draft.latitude,
+              longitude: draft.longitude,
+              locationLabel: draft.locationLabel,
+            ),
+          );
+        }
+        return result;
+      });
+      return imported;
+    } catch (_) {
+      for (final file in createdFiles) {
+        try {
+          if (await file.exists()) await file.delete();
+        } on FileSystemException {
+          // The import failure is more useful than a cleanup failure.
+        }
+      }
+      rethrow;
+    }
+  }
+
   MealEntry _fromRow(Map<String, Object?> row) {
     final feelings = (jsonDecode(row['feelings'] as String) as List<dynamic>)
         .cast<String>();
@@ -153,6 +248,7 @@ class SqliteMealRepository implements MealRepository {
       createdAt: DateTime.fromMillisecondsSinceEpoch(row['created_at'] as int),
       latitude: row['latitude'] as double?,
       longitude: row['longitude'] as double?,
+      locationLabel: row['location_label'] as String?,
     );
   }
 
@@ -164,6 +260,7 @@ class SqliteMealRepository implements MealRepository {
     'created_at': draft.createdAt.millisecondsSinceEpoch,
     'latitude': draft.latitude,
     'longitude': draft.longitude,
+    'location_label': draft.locationLabel,
   };
 
   Map<String, Object?> _entryToRow(MealEntry entry) => {
@@ -174,5 +271,6 @@ class SqliteMealRepository implements MealRepository {
     'created_at': entry.createdAt.millisecondsSinceEpoch,
     'latitude': entry.latitude,
     'longitude': entry.longitude,
+    'location_label': entry.locationLabel,
   };
 }

@@ -1,0 +1,276 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+
+import '../controllers/settings_controller.dart';
+import '../theme/ritual_theme.dart';
+
+class AppLockGate extends StatefulWidget {
+  const AppLockGate({super.key, required this.settings, required this.child});
+
+  final SettingsController settings;
+  final Widget child;
+
+  @override
+  State<AppLockGate> createState() => _AppLockGateState();
+}
+
+class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
+  bool _locked = false;
+  bool _authenticating = false;
+  String _pin = '';
+  String? _message;
+  int _failedAttempts = 0;
+  DateTime? _blockedUntil;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    widget.settings.addListener(_settingsChanged);
+    _locked = widget.settings.lockEnabled;
+    if (_locked && widget.settings.lockMode == AppLockMode.device) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _authenticate());
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant AppLockGate oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.settings != widget.settings) {
+      oldWidget.settings.removeListener(_settingsChanged);
+      widget.settings.addListener(_settingsChanged);
+      _settingsChanged();
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    widget.settings.removeListener(_settingsChanged);
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  void _settingsChanged() {
+    if (!widget.settings.lockEnabled && _locked) {
+      setState(() => _locked = false);
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!widget.settings.lockEnabled || _authenticating) return;
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden) {
+      if (mounted) setState(() => _locked = true);
+    } else if (state == AppLifecycleState.resumed &&
+        _locked &&
+        widget.settings.lockMode == AppLockMode.device) {
+      _authenticate();
+    }
+  }
+
+  Future<void> _authenticate() async {
+    if (_authenticating || !_locked) return;
+    setState(() {
+      _authenticating = true;
+      _message = null;
+    });
+    final unlocked = await widget.settings.authenticateDevice();
+    if (!mounted) return;
+    setState(() {
+      _authenticating = false;
+      _locked = !unlocked;
+      if (!unlocked) _message = 'Ritual is still locked.';
+    });
+  }
+
+  Future<void> _enterDigit(String digit) async {
+    if (_blockedUntil?.isAfter(DateTime.now()) ?? false) return;
+    if (_pin.length >= 4) return;
+    setState(() {
+      _pin += digit;
+      _message = null;
+    });
+    if (_pin.length != 4) return;
+    final correct = await widget.settings.verifyPin(_pin);
+    if (!mounted) return;
+    if (correct) {
+      setState(() {
+        _locked = false;
+        _pin = '';
+        _failedAttempts = 0;
+      });
+      return;
+    }
+    _failedAttempts++;
+    if (_failedAttempts >= 5) {
+      _blockedUntil = DateTime.now().add(const Duration(seconds: 30));
+      _timer?.cancel();
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (!mounted) return;
+        if (!(_blockedUntil?.isAfter(DateTime.now()) ?? false)) {
+          _timer?.cancel();
+          setState(() {
+            _failedAttempts = 0;
+            _blockedUntil = null;
+            _message = null;
+          });
+        } else {
+          setState(() {});
+        }
+      });
+    }
+    setState(() {
+      _pin = '';
+      _message = _blockedUntil == null
+          ? 'That PIN was not correct.'
+          : 'Too many attempts. Try again in 30 seconds.';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_locked) return widget.child;
+    final pinMode = widget.settings.lockMode == AppLockMode.pin;
+    final remaining = _blockedUntil?.difference(DateTime.now()).inSeconds;
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(32),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 360),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 82,
+                    height: 82,
+                    decoration: BoxDecoration(
+                      color: RitualColors.sage.withValues(alpha: 0.18),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.lock_outline_rounded,
+                      size: 38,
+                      color: RitualColors.sage,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Your journal is private',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    pinMode
+                        ? 'Enter your four-digit Ritual PIN.'
+                        : 'Use your fingerprint or device screen lock to continue.',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  if (pinMode) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        4,
+                        (index) => Container(
+                          width: 16,
+                          height: 16,
+                          margin: const EdgeInsets.symmetric(horizontal: 8),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: index < _pin.length
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerHighest,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    for (var row = 0; row < 3; row++)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          for (var column = 1; column <= 3; column++)
+                            _PinKey(
+                              label: '${row * 3 + column}',
+                              onTap: () => _enterDigit('${row * 3 + column}'),
+                            ),
+                        ],
+                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        const SizedBox(width: 72, height: 64),
+                        _PinKey(label: '0', onTap: () => _enterDigit('0')),
+                        SizedBox(
+                          width: 72,
+                          height: 64,
+                          child: IconButton(
+                            tooltip: 'Delete digit',
+                            onPressed: _pin.isEmpty
+                                ? null
+                                : () => setState(
+                                    () => _pin = _pin.substring(
+                                      0,
+                                      _pin.length - 1,
+                                    ),
+                                  ),
+                            icon: const Icon(Icons.backspace_outlined),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ] else
+                    FilledButton.icon(
+                      onPressed: _authenticating ? null : _authenticate,
+                      icon: const Icon(Icons.fingerprint_rounded),
+                      label: Text(
+                        _authenticating ? 'Checking…' : 'Unlock Ritual',
+                      ),
+                    ),
+                  if (_message != null || remaining != null) ...[
+                    const SizedBox(height: 14),
+                    Text(
+                      remaining != null && remaining > 0
+                          ? 'Try again in $remaining seconds.'
+                          : _message ?? '',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PinKey extends StatelessWidget {
+  const _PinKey({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: 72,
+    height: 64,
+    child: TextButton(
+      onPressed: onTap,
+      child: Text(label, style: Theme.of(context).textTheme.headlineSmall),
+    ),
+  );
+}

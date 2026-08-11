@@ -38,8 +38,16 @@ dependencies:
   path_provider: ^2.1.6
   path: ^1.9.1
   image_picker: ^1.2.3
-  geolocator: ^14.0.3
+  geolocator_android: ^5.0.3
+  geolocator_platform_interface: ^4.2.8
+  geocoding: ^5.0.0
   intl: ^0.20.3
+  shared_preferences: ^2.5.4
+  local_auth: ^3.0.2
+  flutter_secure_storage: ^10.3.1
+  crypto: ^3.0.7
+  archive: ^4.0.7
+  file_picker: ^12.0.0-beta.7
 
 dev_dependencies:
   flutter_test:
