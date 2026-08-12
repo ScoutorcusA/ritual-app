@@ -45,6 +45,7 @@ class JournalScreen extends StatelessWidget {
               child: _JournalHeader(
                 controller: controller,
                 onSettings: onSettings,
+                showStreaks: settings?.streaksEnabled ?? true,
               ),
             ),
             if (controller.entries.isEmpty)
@@ -89,10 +90,15 @@ class JournalScreen extends StatelessWidget {
 }
 
 class _JournalHeader extends StatelessWidget {
-  const _JournalHeader({required this.controller, required this.onSettings});
+  const _JournalHeader({
+    required this.controller,
+    required this.onSettings,
+    required this.showStreaks,
+  });
 
   final JournalController controller;
   final VoidCallback onSettings;
+  final bool showStreaks;
 
   @override
   Widget build(BuildContext context) {
@@ -129,42 +135,48 @@ class _JournalHeader extends StatelessWidget {
               'Your daily ritual',
               style: Theme.of(context).textTheme.displaySmall,
             ),
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-              decoration: BoxDecoration(
-                color: RitualColors.ink,
-                borderRadius: BorderRadius.circular(22),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.local_fire_department_rounded,
-                    color: RitualColors.honey,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      controller.currentStreak == 0
-                          ? 'Begin with one mindful meal'
-                          : '${controller.currentStreak} day streak',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: RitualColors.paper,
-                        fontWeight: FontWeight.w600,
+            if (showStreaks) ...[
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 14,
+                ),
+                decoration: BoxDecoration(
+                  color: RitualColors.ink,
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.local_fire_department_rounded,
+                      color: RitualColors.honey,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        controller.currentStreak == 0
+                            ? 'Begin with one mindful meal'
+                            : '${controller.currentStreak} day streak',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              color: RitualColors.paper,
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
                     ),
-                  ),
-                  Text(
-                    'Best ${controller.bestStreak}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: RitualColors.paper.withValues(alpha: 0.72),
+                    Text(
+                      'Best ${controller.bestStreak}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: RitualColors.paper.withValues(alpha: 0.72),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
+            ],
             if (controller.entries.isNotEmpty) ...[
-              const SizedBox(height: 14),
+              SizedBox(height: showStreaks ? 14 : 20),
               _JournalSummaryCard(entries: controller.entries),
             ],
           ],

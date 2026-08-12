@@ -22,7 +22,8 @@ class DailyJournalCard extends StatelessWidget {
     final count = entries.length;
     return Semantics(
       button: true,
-      label: '${DateFormat.yMMMMd().format(day)}, $count moments',
+      label:
+          '${DateFormat.yMMMMd().format(day)}, $count ${count == 1 ? 'moment' : 'moments'}',
       child: Card(
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
@@ -33,20 +34,65 @@ class DailyJournalCard extends StatelessWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(18, 17, 14, 14),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        DateFormat('EEEE, MMMM d').format(day),
-                        style: Theme.of(context).textTheme.titleLarge,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            DateFormat('EEEE, MMMM d').format(day),
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.chevron_right_rounded,
+                            size: 22,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.photo_library_outlined,
+                            size: 15,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '$count ${count == 1 ? 'moment' : 'moments'}',
+                            style: Theme.of(context).textTheme.labelMedium
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                        ],
                       ),
                     ),
-                    Text(
-                      '$count ${count == 1 ? 'moment' : 'moments'}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(width: 2),
-                    const Icon(Icons.chevron_right_rounded),
                   ],
                 ),
               ),

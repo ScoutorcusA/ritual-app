@@ -27,6 +27,22 @@ void main() {
   });
 
   test(
+    'streak display can be disabled without changing other settings',
+    () async {
+      final settings = SettingsController();
+      await settings.initialize();
+      expect(settings.streaksEnabled, isTrue);
+
+      await settings.setStreaksEnabled(false);
+
+      final reloaded = SettingsController();
+      await reloaded.initialize();
+      expect(reloaded.streaksEnabled, isFalse);
+      expect(reloaded.hungerScaleEnabled, isFalse);
+    },
+  );
+
+  test(
     'reminders persist only after notification permission is granted',
     () async {
       final deniedScheduler = _FakeReminderScheduler(

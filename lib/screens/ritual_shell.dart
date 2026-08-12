@@ -88,7 +88,9 @@ class _RitualShellState extends State<RitualShell> {
       );
       if (outcome is SaveResult) {
         setState(() => _selectedIndex = 0);
-        if (outcome.firstEntryToday && mounted) {
+        if (outcome.firstEntryToday &&
+            (widget.settings?.streaksEnabled ?? true) &&
+            mounted) {
           await _showStreakMoment();
         }
       } else {

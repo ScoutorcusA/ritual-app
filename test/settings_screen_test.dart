@@ -43,10 +43,17 @@ void main() {
       ),
     );
 
-    expect(find.text('RECOMMENDED'), findsOneWidget);
+    expect(find.text('Daily streaks'), findsOneWidget);
+    await tester.tap(find.text('Daily streaks'));
+    await tester.pump();
+    expect(settings.streaksEnabled, isFalse);
+    await tester.scrollUntilVisible(find.text('Fullness after eating'), 300);
     expect(find.text('Hunger before eating'), findsOneWidget);
     expect(find.text('Craving before eating'), findsOneWidget);
     expect(find.text('Fullness after eating'), findsOneWidget);
+
+    await tester.scrollUntilVisible(find.text('Device security'), 300);
+    expect(find.text('RECOMMENDED'), findsOneWidget);
 
     await tester.scrollUntilVisible(find.text('Mindful meal reminders'), 300);
     await tester.tap(find.text('Mindful meal reminders'));

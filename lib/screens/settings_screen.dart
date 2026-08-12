@@ -367,6 +367,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
             ),
+            const _SectionTitle('Experience'),
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: SwitchListTile(
+                value: widget.settings.streaksEnabled,
+                onChanged: widget.settings.setStreaksEnabled,
+                secondary: const Icon(Icons.local_fire_department_outlined),
+                title: const Text('Daily streaks'),
+                subtitle: const Text(
+                  'Show streak progress and first-entry celebrations. Turning '
+                  'this off does not delete your progress.',
+                ),
+              ),
+            ),
             const _SectionTitle('Meal reflection'),
             Card(
               clipBehavior: Clip.antiAlias,
@@ -538,7 +552,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 28),
             Text(
-              'Ritual 1.3.1 • ${DateFormat.yMMMM().format(DateTime.now())}',
+              'Ritual 1.4 • ${DateFormat.yMMMM().format(DateTime.now())}',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall,
             ),

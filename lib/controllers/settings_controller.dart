@@ -30,6 +30,7 @@ class SettingsController extends ChangeNotifier {
   static const _pinSaltKey = 'ritual_pin_salt';
   static const _pinHashKey = 'ritual_pin_hash';
   static const _mealRemindersKey = 'meal_reminders_enabled';
+  static const _streaksKey = 'streaks_enabled';
   static const _hungerScaleKey = 'hunger_scale_enabled';
   static const _fullnessScaleKey = 'fullness_scale_enabled';
   static const _cravingScaleKey = 'craving_scale_enabled';
@@ -43,6 +44,7 @@ class SettingsController extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
   AppLockMode _lockMode = AppLockMode.off;
   bool _mealRemindersEnabled = false;
+  bool _streaksEnabled = true;
   bool _hungerScaleEnabled = false;
   bool _fullnessScaleEnabled = false;
   bool _cravingScaleEnabled = false;
@@ -51,6 +53,7 @@ class SettingsController extends ChangeNotifier {
   AppLockMode get lockMode => _lockMode;
   bool get lockEnabled => _lockMode != AppLockMode.off;
   bool get mealRemindersEnabled => _mealRemindersEnabled;
+  bool get streaksEnabled => _streaksEnabled;
   bool get hungerScaleEnabled => _hungerScaleEnabled;
   bool get fullnessScaleEnabled => _fullnessScaleEnabled;
   bool get cravingScaleEnabled => _cravingScaleEnabled;
@@ -78,6 +81,7 @@ class SettingsController extends ChangeNotifier {
     }
     _mealRemindersEnabled =
         await _preferences.getBool(_mealRemindersKey) ?? false;
+    _streaksEnabled = await _preferences.getBool(_streaksKey) ?? true;
     _hungerScaleEnabled = await _preferences.getBool(_hungerScaleKey) ?? false;
     _fullnessScaleEnabled =
         await _preferences.getBool(_fullnessScaleKey) ?? false;
@@ -177,6 +181,13 @@ class SettingsController extends ChangeNotifier {
 
   Future<void> openNotificationSettings() =>
       _reminderScheduler.openNotificationSettings();
+
+  Future<void> setStreaksEnabled(bool value) async {
+    if (_streaksEnabled == value) return;
+    _streaksEnabled = value;
+    notifyListeners();
+    await _preferences.setBool(_streaksKey, value);
+  }
 
   Future<void> setHungerScaleEnabled(bool value) async {
     if (_hungerScaleEnabled == value) return;

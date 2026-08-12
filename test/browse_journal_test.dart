@@ -2,14 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:ritual/controllers/journal_controller.dart';
+import 'package:ritual/controllers/settings_controller.dart';
 import 'package:ritual/models/meal_entry.dart';
 import 'package:ritual/screens/meal_editor_screen.dart';
 import 'package:ritual/screens/ritual_shell.dart';
 import 'package:ritual/theme/ritual_theme.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
 import 'support/memory_meal_repository.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferencesAsyncPlatform.instance =
+        InMemorySharedPreferencesAsync.empty();
+  });
+
   testWidgets('journal bundles a day and opens its daily journal', (
     tester,
   ) async {
@@ -38,6 +46,7 @@ void main() {
 
     expect(find.text(DateFormat('EEEE, MMMM d').format(now)), findsOneWidget);
     expect(find.text('2 moments'), findsOneWidget);
+    expect(find.byIcon(Icons.photo_library_outlined), findsOneWidget);
     expect(find.text('Calm and happy'), findsOneWidget);
     expect(find.text('Total moments'), findsOneWidget);
     expect(find.text('Per logged day'), findsOneWidget);
@@ -52,6 +61,28 @@ void main() {
       scrollable: find.byType(Scrollable).last,
     );
     expect(find.text('Lunch'), findsOneWidget);
+  });
+
+  testWidgets('journal hides streak progress when streaks are disabled', (
+    tester,
+  ) async {
+    final controller = JournalController(MemoryMealRepository());
+    await controller.initialize();
+    final settings = SettingsController();
+    await settings.initialize();
+    await settings.setStreaksEnabled(false);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ritualTheme(),
+        home: RitualShell(controller: controller, settings: settings),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Begin with one mindful meal'), findsNothing);
+    expect(find.byIcon(Icons.local_fire_department_rounded), findsNothing);
+    expect(find.text('Notice what nourishes you'), findsOneWidget);
   });
 
   testWidgets('Browse exposes gallery and calendar with dark-safe filters', (
