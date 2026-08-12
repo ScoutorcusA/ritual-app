@@ -1,5 +1,7 @@
 # Ritual
 
+[![Build Android APK](https://github.com/ScoutorcusA/ritual-app/actions/workflows/android-release.yml/badge.svg)](https://github.com/ScoutorcusA/ritual-app/actions/workflows/android-release.yml)
+
 Ritual is a private, mindful food photo journal built with Flutter. It helps people notice meals, feelings, hunger, cravings, fullness, and eating patterns without counting calories or labeling food as good or bad.
 
 The app is Android-first, works entirely on-device, and has no account, cloud sync, advertisements, subscriptions, analytics SDK, or feature paywall.
@@ -122,6 +124,59 @@ flutter build apk --release
 
 The APK is written to `build/app/outputs/flutter-apk/app-release.apk`.
 
+## Automatic GitHub APK releases
+
+The [Android release workflow](.github/workflows/android-release.yml) runs after every push to `main` and can also be started manually from the repository’s **Actions** tab. It:
+
+1. Installs the project’s pinned Flutter version and dependencies
+2. Runs static analysis and the complete test suite
+3. Builds an APK with a monotonically increasing Android build number
+4. Signs it with the same private key on every run
+5. Uploads a 30-day workflow artifact
+6. Updates the rolling **Ritual Latest** prerelease and its SHA-256 checksum
+
+After the workflow succeeds, download `ritual-latest.apk` from the [Ritual Latest release](https://github.com/ScoutorcusA/ritual-app/releases/tag/ritual-latest). Failed analysis, tests, signing validation, or compilation will prevent a new APK from being published.
+
+### One-time signing setup
+
+Android only permits an APK to update an installed app when both versions use the same signing key. Create one private key and keep at least two secure backups; losing it means future APKs cannot update existing installations.
+
+Generate a key locally:
+
+```sh
+keytool -genkeypair -v \
+  -keystore ritual-release.jks \
+  -alias ritual \
+  -keyalg RSA \
+  -keysize 2048 \
+  -validity 10000
+```
+
+In GitHub, open **Settings → Secrets and variables → Actions** and create these repository secrets:
+
+| Secret | Value |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | The complete `ritual-release.jks` file encoded as one Base64 string |
+| `ANDROID_KEYSTORE_PASSWORD` | The keystore password entered above |
+| `ANDROID_KEY_ALIAS` | `ritual`, or the alias chosen above |
+| `ANDROID_KEY_PASSWORD` | The private-key password entered above |
+
+Encode the keystore on macOS and copy it to the clipboard with:
+
+```sh
+base64 -i ritual-release.jks | pbcopy
+```
+
+On Linux:
+
+```sh
+base64 -w 0 ritual-release.jks
+```
+
+The workflow intentionally fails with a clear message when any signing secret is absent. Keystores are ignored by Git and must never be committed.
+
+> **First CI installation:** An APK signed by the new GitHub key cannot update an older APK signed with Android’s debug key. Export a Ritual ZIP, uninstall the debug-signed build, install `ritual-latest.apk`, and import the ZIP once. Later GitHub APKs will update in place and preserve app data.
+
 ## Testing
 
 The automated suite covers journal grouping, calendar highlights, streak calculations and preferences, app-lock lifecycle behavior, dark-mode labels, location models, reminder planning, reflection scales, summaries, insight rules, ZIP round trips, export date boundaries, PDF creation, and CSV safety.
@@ -139,12 +194,12 @@ The solid-color images in the sample PDF are deliberately generated test images.
 
 ## Before publishing to Google Play
 
-The current Android release build is signed with the debug key for local installation. Before publishing, the project still needs:
+Local release builds fall back to Android’s debug key unless the signing environment variables used by the GitHub workflow are provided. GitHub release builds use the stable private key configured in repository secrets. Before publishing to Google Play, the project still needs:
 
-- A private production upload key and Play App Signing configuration
+- Play App Signing configuration and a decision on whether the GitHub key will also serve as the Play upload key
 - An Android App Bundle (`flutter build appbundle`)
 - A public privacy policy linked from the app and Play listing
 - Accurate Data Safety and Health Apps declarations
 - Store screenshots, listing copy, support details, and closed testing as required for the developer account
 
-Do not publish an APK signed with the current debug signing configuration.
+Do not publish an APK produced by the local debug-key fallback.
