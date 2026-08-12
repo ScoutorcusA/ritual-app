@@ -28,7 +28,7 @@ void main() {
             mealType: MealType.breakfast,
             feelings: const ['Happy'],
             note: '',
-            createdAt: DateTime(2026, 8, 12),
+            createdAt: DateTime.now(),
           ),
         ],
       ),
@@ -54,18 +54,32 @@ void main() {
     expect(settings.mealRemindersEnabled, isTrue);
 
     await tester.scrollUntilVisible(find.text('Export journal'), 300);
-    expect(find.text('Export clinician PDF'), findsOneWidget);
+    expect(find.text('Export report'), findsOneWidget);
     await tester.tap(find.text('Export journal'));
     await tester.pumpAndSettle();
     expect(find.text('This ZIP is not encrypted'), findsOneWidget);
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(find.text('Export clinician PDF'), 300);
-    await tester.tap(find.text('Export clinician PDF'));
+    await tester.scrollUntilVisible(find.text('Export report'), 300);
+    await tester.tap(find.text('Export report'));
     await tester.pumpAndSettle();
-    expect(find.text('Export a private health report?'), findsOneWidget);
-    expect(find.textContaining('It is not encrypted'), findsOneWidget);
+    expect(find.text('Export journal report'), findsOneWidget);
+    expect(find.text('Last 7 days'), findsOneWidget);
+    expect(find.text('Last 30 days'), findsOneWidget);
+    expect(find.text('1 entry'), findsNWidgets(2));
+    expect(find.text('1 entry will be exported.'), findsOneWidget);
+    expect(find.textContaining('not encrypted'), findsOneWidget);
+    await tester.tap(find.text('Custom dates'));
+    await tester.pumpAndSettle();
+    expect(find.text('Choose journal dates'), findsOneWidget);
+    await tester.tap(find.text('Use dates'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('1 entry'), findsWidgets);
+    await tester.tap(find.text('CSV'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Photos are not included'), findsOneWidget);
+    expect(find.text('Create CSV'), findsOneWidget);
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
 

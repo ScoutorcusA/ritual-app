@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pdf;
 
+import '../models/journal_export.dart';
 import '../models/meal_entry.dart';
 import '../utils/journal_summary.dart';
 
@@ -30,9 +31,11 @@ class JournalPdfService {
   Future<JournalPdfResult> createReport(
     List<MealEntry> entries, {
     DateTime? generatedAt,
+    JournalExportRange? range,
   }) async {
     final created = generatedAt ?? DateTime.now();
-    final sorted = List<MealEntry>.of(entries)
+    final effectiveRange = range ?? _rangeFor(entries, created);
+    final sorted = effectiveRange.filter(entries)
       ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
     final days = <String, List<_PdfMeal>>{};
     for (final entry in sorted) {
@@ -49,7 +52,7 @@ class JournalPdfService {
       title: 'Ritual food journal report',
       author: 'Ritual',
       subject: 'Self-recorded meal reflection journal',
-      creator: 'Ritual 1.2',
+      creator: 'Ritual 1.3',
     );
     document.addPage(
       pdf.MultiPage(
@@ -127,6 +130,11 @@ class JournalPdfService {
             'Prepared ${DateFormat.yMMMMd().add_jm().format(created)}',
             style: const pdf.TextStyle(color: _sage, fontSize: 11),
           ),
+          pdf.SizedBox(height: 4),
+          pdf.Text(
+            'Journal period ${_pdfSafe(effectiveRange.displayLabel)}',
+            style: const pdf.TextStyle(color: _sage, fontSize: 11),
+          ),
           pdf.SizedBox(height: 22),
           pdf.Container(
             padding: const pdf.EdgeInsets.all(16),
@@ -183,10 +191,22 @@ class JournalPdfService {
     final bytes = await document.save();
     return JournalPdfResult(
       bytes: bytes,
-      fileName:
-          'ritual-clinician-report-${DateFormat('yyyy-MM-dd').format(created)}.pdf',
-      entryCount: entries.length,
+      fileName: 'ritual-journal-${effectiveRange.fileNameRange}.pdf',
+      entryCount: sorted.length,
     );
+  }
+
+  JournalExportRange _rangeFor(List<MealEntry> entries, DateTime fallback) {
+    if (entries.isEmpty) {
+      return JournalExportRange(start: fallback, end: fallback);
+    }
+    var earliest = entries.first.createdAt;
+    var latest = entries.first.createdAt;
+    for (final entry in entries.skip(1)) {
+      if (entry.createdAt.isBefore(earliest)) earliest = entry.createdAt;
+      if (entry.createdAt.isAfter(latest)) latest = entry.createdAt;
+    }
+    return JournalExportRange(start: earliest, end: latest);
   }
 
   pdf.Widget _summaryMetric(String value, String label) => pdf.Expanded(

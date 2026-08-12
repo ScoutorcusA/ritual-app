@@ -5,7 +5,10 @@ import 'package:intl/intl.dart';
 
 import '../controllers/journal_controller.dart';
 import '../controllers/settings_controller.dart';
+import '../models/journal_export.dart';
+import '../models/meal_entry.dart';
 import '../services/journal_archive_service.dart';
+import '../services/journal_csv_service.dart';
 import '../services/journal_pdf_service.dart';
 import '../theme/ritual_theme.dart';
 
@@ -25,6 +28,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final JournalArchiveService _archiveService = JournalArchiveService();
+  final JournalCsvService _csvService = JournalCsvService();
   final JournalPdfService _pdfService = JournalPdfService();
   bool _working = false;
 
@@ -126,48 +130,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _exportClinicianPdf() async {
+  Future<void> _exportReport() async {
     if (_working || widget.journal.entries.isEmpty) return;
-    final confirmed = await showDialog<bool>(
+    final selection = await showDialog<_ReportExportSelection>(
       context: context,
-      builder: (context) => AlertDialog(
-        icon: const Icon(Icons.health_and_safety_outlined),
-        title: const Text('Export a private health report?'),
-        content: const Text(
-          'The PDF includes meal photos, dates, reflections, feelings, saved '
-          'places, and ratings. It is not encrypted. Save and share it '
-          'carefully, and send it only to a clinician you trust.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Create PDF'),
-          ),
-        ],
+      builder: (context) => _ReportExportDialog(
+        entries: widget.journal.entries,
+        today: DateTime.now(),
       ),
     );
-    if (!mounted || confirmed != true) return;
+    if (!mounted || selection == null) return;
     setState(() => _working = true);
     try {
-      final result = await _pdfService.createReport(widget.journal.entries);
+      final isPdf = selection.format == JournalExportFormat.pdf;
+      late final Uint8List bytes;
+      late final String fileName;
+      late final int entryCount;
+      if (isPdf) {
+        final result = await _pdfService.createReport(
+          widget.journal.entries,
+          range: selection.range,
+        );
+        bytes = result.bytes;
+        fileName = result.fileName;
+        entryCount = result.entryCount;
+      } else {
+        final result = _csvService.createReport(
+          widget.journal.entries,
+          range: selection.range,
+        );
+        bytes = result.bytes;
+        fileName = result.fileName;
+        entryCount = result.entryCount;
+      }
       final savedPath = await FilePicker.saveFile(
-        dialogTitle: 'Export clinician report',
-        fileName: result.fileName,
+        dialogTitle: 'Export Ritual journal report',
+        fileName: fileName,
         type: FileType.custom,
-        allowedExtensions: const ['pdf'],
-        bytes: result.bytes,
+        allowedExtensions: [isPdf ? 'pdf' : 'csv'],
+        bytes: bytes,
       );
       if (!mounted || savedPath == null) return;
       _message(
-        '${result.entryCount} ${result.entryCount == 1 ? 'entry' : 'entries'} '
-        'exported to PDF.',
+        '$entryCount ${entryCount == 1 ? 'entry' : 'entries'} '
+        'exported to ${isPdf ? 'PDF' : 'CSV'}.',
       );
     } catch (error) {
-      if (mounted) _message('PDF export failed: $error', error: true);
+      if (mounted) _message('Report export failed: $error', error: true);
     } finally {
       if (mounted) setState(() => _working = false);
     }
@@ -436,13 +445,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const Divider(height: 1),
                   ListTile(
                     enabled: !_working && widget.journal.entries.isNotEmpty,
-                    leading: const Icon(Icons.picture_as_pdf_outlined),
-                    title: const Text('Export clinician PDF'),
+                    leading: const Icon(Icons.medical_information_outlined),
+                    title: const Text('Export report'),
                     subtitle: const Text(
-                      'Day-by-day meal report for a dietitian or doctor - unencrypted',
+                      'Choose PDF or CSV and a date range - unencrypted',
                     ),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: _exportClinicianPdf,
+                    onTap: _exportReport,
                   ),
                   const Divider(height: 1),
                   ListTile(
@@ -504,7 +513,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 28),
             Text(
-              'Ritual 1.2 • ${DateFormat.yMMMM().format(DateTime.now())}',
+              'Ritual 1.3 • ${DateFormat.yMMMM().format(DateTime.now())}',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall,
             ),
@@ -552,6 +561,210 @@ class _SectionTitle extends StatelessWidget {
       ),
     ),
   );
+}
+
+class _ReportExportSelection {
+  const _ReportExportSelection({required this.format, required this.range});
+
+  final JournalExportFormat format;
+  final JournalExportRange range;
+}
+
+class _ReportExportDialog extends StatefulWidget {
+  const _ReportExportDialog({required this.entries, required this.today});
+
+  final List<MealEntry> entries;
+  final DateTime today;
+
+  @override
+  State<_ReportExportDialog> createState() => _ReportExportDialogState();
+}
+
+class _ReportExportDialogState extends State<_ReportExportDialog> {
+  JournalExportFormat _format = JournalExportFormat.pdf;
+  JournalExportRangePreset _preset = JournalExportRangePreset.last7Days;
+  JournalExportRange? _customRange;
+
+  late final JournalExportRange _last7Days = JournalExportRange.lastDays(
+    today: widget.today,
+    days: 7,
+  );
+  late final JournalExportRange _last30Days = JournalExportRange.lastDays(
+    today: widget.today,
+    days: 30,
+  );
+
+  JournalExportRange? get _selectedRange => switch (_preset) {
+    JournalExportRangePreset.last7Days => _last7Days,
+    JournalExportRangePreset.last30Days => _last30Days,
+    JournalExportRangePreset.custom => _customRange,
+  };
+
+  Future<void> _selectPreset(JournalExportRangePreset preset) async {
+    if (preset != JournalExportRangePreset.custom) {
+      setState(() => _preset = preset);
+      return;
+    }
+    final earliestEntry = widget.entries.fold<DateTime>(
+      widget.today,
+      (earliest, entry) =>
+          entry.createdAt.isBefore(earliest) ? entry.createdAt : earliest,
+    );
+    final latestEntry = widget.entries.fold<DateTime>(
+      widget.today,
+      (latest, entry) =>
+          entry.createdAt.isAfter(latest) ? entry.createdAt : latest,
+    );
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(earliestEntry.year - 1),
+      lastDate: DateTime(latestEntry.year + 1, 12, 31),
+      initialDateRange: DateTimeRange(
+        start: _customRange?.start ?? _last30Days.start,
+        end: _customRange?.end ?? _last30Days.end,
+      ),
+      helpText: 'Choose journal dates',
+      saveText: 'Use dates',
+    );
+    if (!mounted || picked == null) return;
+    setState(() {
+      _customRange = JournalExportRange(start: picked.start, end: picked.end);
+      _preset = JournalExportRangePreset.custom;
+    });
+  }
+
+  String _countLabel(JournalExportRange range) {
+    final count = range.count(widget.entries);
+    return '$count ${count == 1 ? 'entry' : 'entries'}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedRange = _selectedRange;
+    final selectedCount = selectedRange?.count(widget.entries) ?? 0;
+    final isPdf = _format == JournalExportFormat.pdf;
+    return AlertDialog(
+      icon: const Icon(Icons.health_and_safety_outlined),
+      title: const Text('Export journal report'),
+      content: SizedBox(
+        width: 480,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Format', style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 8),
+              SegmentedButton<JournalExportFormat>(
+                segments: const [
+                  ButtonSegment(
+                    value: JournalExportFormat.pdf,
+                    label: Text('PDF'),
+                    icon: Icon(Icons.picture_as_pdf_outlined),
+                  ),
+                  ButtonSegment(
+                    value: JournalExportFormat.csv,
+                    label: Text('CSV'),
+                    icon: Icon(Icons.table_chart_outlined),
+                  ),
+                ],
+                selected: {_format},
+                onSelectionChanged: (selection) =>
+                    setState(() => _format = selection.single),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isPdf
+                    ? 'Includes photos and all journal details.'
+                    : 'Includes journal details in one row per entry. Photos are not included.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 20),
+              Text('Date range', style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 4),
+              RadioGroup<JournalExportRangePreset>(
+                groupValue: _preset,
+                onChanged: (preset) {
+                  if (preset != null) _selectPreset(preset);
+                },
+                child: Column(
+                  children: [
+                    RadioListTile<JournalExportRangePreset>(
+                      value: JournalExportRangePreset.last7Days,
+                      title: const Text('Last 7 days'),
+                      subtitle: Text(_countLabel(_last7Days)),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    RadioListTile<JournalExportRangePreset>(
+                      value: JournalExportRangePreset.last30Days,
+                      title: const Text('Last 30 days'),
+                      subtitle: Text(_countLabel(_last30Days)),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    RadioListTile<JournalExportRangePreset>(
+                      value: JournalExportRangePreset.custom,
+                      title: const Text('Custom dates'),
+                      subtitle: Text(
+                        _customRange == null
+                            ? 'Choose dates to see the entry count'
+                            : '${_customRange!.displayLabel} • ${_countLabel(_customRange!)}',
+                      ),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer.withValues(alpha: 0.45),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  selectedRange == null
+                      ? 'Choose a custom date range to continue.'
+                      : '$selectedCount ${selectedCount == 1 ? 'entry' : 'entries'} will be exported.',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.no_encryption_outlined, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'This export is not encrypted. Save it privately and share it only with people you trust.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: selectedRange == null || selectedCount == 0
+              ? null
+              : () => Navigator.pop(
+                  context,
+                  _ReportExportSelection(format: _format, range: selectedRange),
+                ),
+          child: Text(isPdf ? 'Create PDF' : 'Create CSV'),
+        ),
+      ],
+    );
+  }
 }
 
 class _PinSetupDialog extends StatefulWidget {

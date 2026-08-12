@@ -1,7 +1,9 @@
 import 'dart:io';
 
 import 'package:image/image.dart' as image;
+import 'package:ritual/models/journal_export.dart';
 import 'package:ritual/models/meal_entry.dart';
+import 'package:ritual/services/journal_csv_service.dart';
 import 'package:ritual/services/journal_pdf_service.dart';
 
 Future<void> main() async {
@@ -37,9 +39,11 @@ Future<void> main() async {
               : const ['Happy', 'Social'],
           note: index == 1
               ? 'A relaxed meal with enough time to notice the flavors.'
+              : index == 4
+              ? 'Quick snack, eaten outside.\nI felt more settled afterward.'
               : '',
           createdAt: moment.$2,
-          locationLabel: index < 3 ? 'Home' : 'Neighborhood cafe',
+          locationLabel: index < 3 ? 'Home' : 'Neighborhood cafe, downtown',
           hungerLevel: 3 + index % 2,
           cravingLevel: 2 + index % 3,
           fullnessLevel: 3 + index % 2,
@@ -47,15 +51,27 @@ Future<void> main() async {
       );
     }
 
+    final range = JournalExportRange(
+      start: DateTime(2026, 8, 6),
+      end: DateTime(2026, 8, 12),
+    );
     final report = await JournalPdfService().createReport(
       entries,
       generatedAt: DateTime(2026, 8, 12, 10, 30),
+      range: range,
     );
     final output = Directory('output/pdf');
     await output.create(recursive: true);
     await File(
       '${output.path}/ritual-sample-clinician-report.pdf',
     ).writeAsBytes(report.bytes, flush: true);
+
+    final csv = JournalCsvService().createReport(entries, range: range);
+    final csvOutput = Directory('output/csv');
+    await csvOutput.create(recursive: true);
+    await File(
+      '${csvOutput.path}/ritual-sample-journal.csv',
+    ).writeAsBytes(csv.bytes, flush: true);
   } finally {
     await temporary.delete(recursive: true);
   }
