@@ -120,11 +120,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _setReminders(bool enabled) async {
-    final changed = await widget.settings.setMealRemindersEnabled(enabled);
+    final result = await widget.settings.setMealRemindersEnabled(enabled);
     if (!mounted) return;
-    if (!changed && enabled) {
+    if (result == ReminderToggleResult.permissionDenied) {
+      final openSettings = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          icon: const Icon(Icons.notifications_off_outlined),
+          title: const Text('Notifications are turned off'),
+          content: const Text(
+            'Android did not allow Ritual to send reminders. You can allow '
+            'notifications in Ritual’s Android settings, then turn reminders on.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Not now'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Open settings'),
+            ),
+          ],
+        ),
+      );
+      if (openSettings == true) {
+        await widget.settings.openNotificationSettings();
+      }
+    } else if (result == ReminderToggleResult.unavailable) {
       _message(
-        'Notifications were not enabled. Allow them in Android settings, then try again.',
+        'Ritual could not start reminders. Restart the app and try again.',
         error: true,
       );
     }
@@ -513,7 +538,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 28),
             Text(
-              'Ritual 1.3 • ${DateFormat.yMMMM().format(DateTime.now())}',
+              'Ritual 1.3.1 • ${DateFormat.yMMMM().format(DateTime.now())}',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall,
             ),

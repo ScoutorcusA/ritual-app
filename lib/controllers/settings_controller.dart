@@ -11,6 +11,8 @@ import '../services/meal_reminder_service.dart';
 
 enum AppLockMode { off, device, pin }
 
+enum ReminderToggleResult { enabled, disabled, permissionDenied, unavailable }
+
 class SettingsController extends ChangeNotifier {
   SettingsController({
     SharedPreferencesAsync? preferences,
@@ -151,15 +153,30 @@ class SettingsController extends ChangeNotifier {
     await _secureStorage.delete(key: _pinHashKey);
   }
 
-  Future<bool> setMealRemindersEnabled(bool value) async {
-    if (_mealRemindersEnabled == value) return true;
-    if (value && !await _reminderScheduler.requestPermission()) return false;
+  Future<ReminderToggleResult> setMealRemindersEnabled(bool value) async {
+    if (_mealRemindersEnabled == value) {
+      return value
+          ? ReminderToggleResult.enabled
+          : ReminderToggleResult.disabled;
+    }
+    if (value) {
+      final permission = await _reminderScheduler.requestPermission();
+      if (permission == ReminderPermissionStatus.denied) {
+        return ReminderToggleResult.permissionDenied;
+      }
+      if (permission == ReminderPermissionStatus.unavailable) {
+        return ReminderToggleResult.unavailable;
+      }
+    }
     _mealRemindersEnabled = value;
     notifyListeners();
     await _preferences.setBool(_mealRemindersKey, value);
     if (!value) await _reminderScheduler.cancelAllReminders();
-    return true;
+    return value ? ReminderToggleResult.enabled : ReminderToggleResult.disabled;
   }
+
+  Future<void> openNotificationSettings() =>
+      _reminderScheduler.openNotificationSettings();
 
   Future<void> setHungerScaleEnabled(bool value) async {
     if (_hungerScaleEnabled == value) return;

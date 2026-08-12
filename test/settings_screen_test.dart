@@ -102,9 +102,9 @@ class _FakeSettingsController extends SettingsController {
   bool get mealRemindersEnabled => _reminders;
 
   @override
-  Future<bool> setMealRemindersEnabled(bool value) async {
+  Future<ReminderToggleResult> setMealRemindersEnabled(bool value) async {
     _reminders = value;
     notifyListeners();
-    return true;
+    return value ? ReminderToggleResult.enabled : ReminderToggleResult.disabled;
   }
 }

@@ -7,6 +7,8 @@ import '../models/meal_entry.dart';
 
 enum MealReminderKind { breakfast, lunch, dinner, emptyDay }
 
+enum ReminderPermissionStatus { granted, denied, unavailable }
+
 class MealReminder {
   const MealReminder({
     required this.id,
@@ -131,7 +133,8 @@ class MealReminderPlanner {
 
 abstract class MealReminderScheduler {
   Future<void> initialize();
-  Future<bool> requestPermission();
+  Future<ReminderPermissionStatus> requestPermission();
+  Future<void> openNotificationSettings();
   Future<void> sync({required List<MealEntry> entries, required bool enabled});
   Future<void> cancelAllReminders();
 }
@@ -143,7 +146,11 @@ class NoopMealReminderScheduler implements MealReminderScheduler {
   Future<void> initialize() async {}
 
   @override
-  Future<bool> requestPermission() async => false;
+  Future<ReminderPermissionStatus> requestPermission() async =>
+      ReminderPermissionStatus.unavailable;
+
+  @override
+  Future<void> openNotificationSettings() async {}
 
   @override
   Future<void> sync({
@@ -174,16 +181,16 @@ class LocalMealReminderService implements MealReminderScheduler {
   final FlutterLocalNotificationsPlugin _notifications;
   final MealReminderPlanner _planner = const MealReminderPlanner();
   bool _ready = false;
+  bool _timezoneReady = false;
 
   @override
   Future<void> initialize() async {
     timezone_data.initializeTimeZones();
+    await _initializeTimezone();
     try {
-      final localTimezone = await FlutterTimezone.getLocalTimezone();
-      timezone.setLocalLocation(timezone.getLocation(localTimezone.identifier));
       await _notifications.initialize(
         settings: const InitializationSettings(
-          android: AndroidInitializationSettings('ic_launcher'),
+          android: AndroidInitializationSettings('ic_stat_ritual'),
           iOS: DarwinInitializationSettings(
             requestAlertPermission: false,
             requestBadgePermission: false,
@@ -197,26 +204,54 @@ class LocalMealReminderService implements MealReminderScheduler {
     }
   }
 
-  @override
-  Future<bool> requestPermission() async {
-    if (!_ready) return false;
-    final android = _notifications
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
-    if (android != null) {
-      return await android.requestNotificationsPermission() ?? false;
+  Future<void> _initializeTimezone() async {
+    try {
+      final localTimezone = await FlutterTimezone.getLocalTimezone();
+      timezone.setLocalLocation(timezone.getLocation(localTimezone.identifier));
+      _timezoneReady = true;
+    } catch (_) {
+      _timezoneReady = false;
     }
-    final ios = _notifications
-        .resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin
-        >();
-    return await ios?.requestPermissions(
-          alert: true,
-          badge: false,
-          sound: true,
-        ) ??
-        true;
+  }
+
+  @override
+  Future<ReminderPermissionStatus> requestPermission() async {
+    if (!_ready) return ReminderPermissionStatus.unavailable;
+    try {
+      final android = _notifications
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      if (android != null) {
+        if (await android.areNotificationsEnabled() ?? false) {
+          return ReminderPermissionStatus.granted;
+        }
+        final granted = await android.requestNotificationsPermission() ?? false;
+        return granted
+            ? ReminderPermissionStatus.granted
+            : ReminderPermissionStatus.denied;
+      }
+      final ios = _notifications
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
+      final granted = await ios?.requestPermissions(
+        alert: true,
+        badge: false,
+        sound: true,
+      );
+      return granted == false
+          ? ReminderPermissionStatus.denied
+          : ReminderPermissionStatus.granted;
+    } catch (_) {
+      return ReminderPermissionStatus.unavailable;
+    }
+  }
+
+  @override
+  Future<void> openNotificationSettings() async {
+    if (!_ready) return;
+    await _notifications.openAppNotificationSettings();
   }
 
   @override
@@ -227,6 +262,8 @@ class LocalMealReminderService implements MealReminderScheduler {
     if (!_ready) return;
     await cancelAllReminders();
     if (!enabled) return;
+    if (!_timezoneReady) await _initializeTimezone();
+    if (!_timezoneReady) return;
 
     final now = timezone.TZDateTime.now(timezone.local);
     final reminders = _planner.plan(entries: entries, now: now);
