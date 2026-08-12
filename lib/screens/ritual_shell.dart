@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../controllers/journal_controller.dart';
 import '../controllers/settings_controller.dart';
 import '../theme/ritual_theme.dart';
+import '../widgets/app_lock_gate.dart';
 import '../widgets/streak_celebration_overlay.dart';
 import 'browse_screen.dart';
 import 'journal_screen.dart';
@@ -46,12 +47,15 @@ class _RitualShellState extends State<RitualShell> {
     if (_capturing) return;
     setState(() => _capturing = true);
     try {
-      final photo = await _imagePicker.pickImage(
-        source: ImageSource.camera,
-        preferredCameraDevice: CameraDevice.rear,
-        imageQuality: 92,
-        maxWidth: 2400,
-        requestFullMetadata: false,
+      final photo = await AppLockGate.runTrustedInterruption(
+        context,
+        () => _imagePicker.pickImage(
+          source: ImageSource.camera,
+          preferredCameraDevice: CameraDevice.rear,
+          imageQuality: 92,
+          maxWidth: 2400,
+          requestFullMetadata: false,
+        ),
       );
       if (photo != null && mounted) await _preparePhoto(photo);
     } catch (_) {

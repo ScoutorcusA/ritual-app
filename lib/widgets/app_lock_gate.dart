@@ -12,6 +12,15 @@ class AppLockGate extends StatefulWidget {
   final SettingsController settings;
   final Widget child;
 
+  static Future<T> runTrustedInterruption<T>(
+    BuildContext context,
+    Future<T> Function() action,
+  ) {
+    final scope = context
+        .dependOnInheritedWidgetOfExactType<_TrustedInterruptionScope>();
+    return scope == null ? action() : scope.run(action);
+  }
+
   @override
   State<AppLockGate> createState() => _AppLockGateState();
 }
@@ -31,6 +40,7 @@ class _AppLockGateState extends State<AppLockGate> {
   Timer? _backgroundLockTimer;
   late final AppLifecycleListener _lifecycleListener;
   bool _lockOnResume = false;
+  int _trustedInterruptionDepth = 0;
 
   @override
   void initState() {
@@ -79,10 +89,10 @@ class _AppLockGateState extends State<AppLockGate> {
   }
 
   void _markBackgrounded() {
-    if (!widget.settings.lockEnabled) return;
+    if (!widget.settings.lockEnabled || _trustedInterruptionDepth > 0) return;
     _lockOnResume = true;
     if (_locked || _backgroundLockTimer != null) return;
-    _backgroundLockTimer = Timer(const Duration(seconds: 1), () {
+    _backgroundLockTimer = Timer(const Duration(seconds: 5), () {
       _backgroundLockTimer = null;
       if (!mounted ||
           !widget.settings.lockEnabled ||
@@ -105,6 +115,24 @@ class _AppLockGateState extends State<AppLockGate> {
     if (!_locked) return;
     if (widget.settings.lockMode == AppLockMode.device && !_authenticating) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _authenticate());
+    }
+  }
+
+  Future<T> _runTrustedInterruption<T>(Future<T> Function() action) async {
+    _trustedInterruptionDepth++;
+    _backgroundLockTimer?.cancel();
+    _backgroundLockTimer = null;
+    _lockOnResume = false;
+    try {
+      return await action();
+    } finally {
+      _trustedInterruptionDepth--;
+      if (_trustedInterruptionDepth == 0 &&
+          mounted &&
+          widget.settings.lockEnabled &&
+          WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+        _markBackgrounded();
+      }
     }
   }
 
@@ -306,7 +334,13 @@ class _AppLockGateState extends State<AppLockGate> {
             enabled: !_locked,
             child: ExcludeSemantics(
               excluding: _locked,
-              child: IgnorePointer(ignoring: _locked, child: widget.child),
+              child: IgnorePointer(
+                ignoring: _locked,
+                child: _TrustedInterruptionScope(
+                  run: _runTrustedInterruption,
+                  child: widget.child,
+                ),
+              ),
             ),
           ),
         ),
@@ -314,6 +348,15 @@ class _AppLockGateState extends State<AppLockGate> {
       ],
     );
   }
+}
+
+class _TrustedInterruptionScope extends InheritedWidget {
+  const _TrustedInterruptionScope({required this.run, required super.child});
+
+  final Future<T> Function<T>(Future<T> Function() action) run;
+
+  @override
+  bool updateShouldNotify(_TrustedInterruptionScope oldWidget) => false;
 }
 
 class _PinKey extends StatelessWidget {
