@@ -41,6 +41,9 @@ class MealEntry {
     this.latitude,
     this.longitude,
     this.locationLabel,
+    this.hungerLevel,
+    this.fullnessLevel,
+    this.cravingLevel,
   });
 
   final int id;
@@ -52,6 +55,9 @@ class MealEntry {
   final double? latitude;
   final double? longitude;
   final String? locationLabel;
+  final int? hungerLevel;
+  final int? fullnessLevel;
+  final int? cravingLevel;
 
   bool get hasLocation => latitude != null && longitude != null;
 
@@ -62,7 +68,14 @@ class MealEntry {
     double? latitude,
     double? longitude,
     String? locationLabel,
-    bool clearLocation = false,
+    bool clearCoordinates = false,
+    bool clearLocationLabel = false,
+    int? hungerLevel,
+    int? fullnessLevel,
+    int? cravingLevel,
+    bool clearHungerLevel = false,
+    bool clearFullnessLevel = false,
+    bool clearCravingLevel = false,
   }) {
     return MealEntry(
       id: id,
@@ -71,9 +84,18 @@ class MealEntry {
       feelings: feelings ?? this.feelings,
       note: note ?? this.note,
       createdAt: createdAt,
-      latitude: clearLocation ? null : latitude ?? this.latitude,
-      longitude: clearLocation ? null : longitude ?? this.longitude,
-      locationLabel: clearLocation ? null : locationLabel ?? this.locationLabel,
+      latitude: clearCoordinates ? null : latitude ?? this.latitude,
+      longitude: clearCoordinates ? null : longitude ?? this.longitude,
+      locationLabel: clearLocationLabel
+          ? null
+          : locationLabel ?? this.locationLabel,
+      hungerLevel: clearHungerLevel ? null : hungerLevel ?? this.hungerLevel,
+      fullnessLevel: clearFullnessLevel
+          ? null
+          : fullnessLevel ?? this.fullnessLevel,
+      cravingLevel: clearCravingLevel
+          ? null
+          : cravingLevel ?? this.cravingLevel,
     );
   }
 }
@@ -88,6 +110,9 @@ class MealDraft {
     this.latitude,
     this.longitude,
     this.locationLabel,
+    this.hungerLevel,
+    this.fullnessLevel,
+    this.cravingLevel,
   });
 
   final String imagePath;
@@ -98,6 +123,9 @@ class MealDraft {
   final double? latitude;
   final double? longitude;
   final String? locationLabel;
+  final int? hungerLevel;
+  final int? fullnessLevel;
+  final int? cravingLevel;
 }
 
 class MealImport {

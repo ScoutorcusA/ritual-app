@@ -67,6 +67,27 @@ void main() {
     expect(first.firstEntryToday, isTrue);
     expect(second.firstEntryToday, isFalse);
   });
+
+  test('delete all clears entries, highlights, and streaks', () async {
+    final now = DateTime.now();
+    final repository = MemoryMealRepository(
+      entries: [
+        _entry(1, now),
+        _entry(2, now.subtract(const Duration(days: 1))),
+      ],
+    )..bestStreak = 8;
+    final controller = JournalController(repository);
+    await controller.initialize();
+
+    await controller.deleteAllJournalData();
+
+    expect(controller.entries, isEmpty);
+    expect(controller.currentStreak, 0);
+    expect(controller.bestStreak, 0);
+    expect(repository.entries, isEmpty);
+    expect(repository.highlights, isEmpty);
+    expect(repository.bestStreak, 0);
+  });
 }
 
 MealEntry _entry(int id, DateTime createdAt) => MealEntry(

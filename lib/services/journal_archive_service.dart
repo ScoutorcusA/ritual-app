@@ -81,6 +81,9 @@ class JournalArchiveService {
         'latitude': entry.latitude,
         'longitude': entry.longitude,
         'locationLabel': entry.locationLabel,
+        'hungerLevel': entry.hungerLevel,
+        'fullnessLevel': entry.fullnessLevel,
+        'cravingLevel': entry.cravingLevel,
         'photo': photoPath,
         'photoSha256': photoHash,
       };
@@ -251,6 +254,9 @@ class JournalArchiveService {
     if (locationLabel is String && locationLabel.length > 500) {
       throw const RitualArchiveException('An exported place name is too long.');
     }
+    final hungerLevel = _nullableScale(raw['hungerLevel'], 'hunger');
+    final fullnessLevel = _nullableScale(raw['fullnessLevel'], 'fullness');
+    final cravingLevel = _nullableScale(raw['cravingLevel'], 'craving');
 
     return MealImport(
       draft: MealDraft(
@@ -262,6 +268,9 @@ class JournalArchiveService {
         latitude: latitude,
         longitude: longitude,
         locationLabel: locationLabel as String?,
+        hungerLevel: hungerLevel,
+        fullnessLevel: fullnessLevel,
+        cravingLevel: cravingLevel,
       ),
       photoBytes: photoBytes,
       photoExtension: _safePhotoExtension(p.extension(photoPath)),
@@ -275,6 +284,14 @@ class JournalArchiveService {
       throw const RitualArchiveException('An exported coordinate is invalid.');
     }
     return value.toDouble();
+  }
+
+  int? _nullableScale(Object? value, String name) {
+    if (value == null) return null;
+    if (value is! int || value < 1 || value > 5) {
+      throw RitualArchiveException('An exported $name rating is invalid.');
+    }
+    return value;
   }
 
   String _fingerprint(Map<String, Object?> values) {

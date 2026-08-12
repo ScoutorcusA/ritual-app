@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:geolocator_platform_interface/geolocator_platform_interface.dart';
 
 import '../controllers/journal_controller.dart';
+import '../controllers/settings_controller.dart';
 import '../models/meal_entry.dart';
 import '../theme/ritual_theme.dart';
 import '../widgets/meal_photo.dart';
@@ -16,11 +17,13 @@ class MealEditorScreen extends StatefulWidget {
     required this.controller,
     required this.imagePath,
     this.entry,
+    this.settings,
   });
 
   final JournalController controller;
   final String imagePath;
   final MealEntry? entry;
+  final SettingsController? settings;
 
   bool get editing => entry != null;
 
@@ -38,6 +41,9 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
   bool _findingLocation = false;
   bool _saving = false;
   String? _locationMessage;
+  int? _hungerLevel;
+  int? _fullnessLevel;
+  int? _cravingLevel;
 
   @override
   void initState() {
@@ -49,6 +55,9 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
     _latitude = entry?.latitude;
     _longitude = entry?.longitude;
     _locationLabel = entry?.locationLabel;
+    _hungerLevel = entry?.hungerLevel;
+    _fullnessLevel = entry?.fullnessLevel;
+    _cravingLevel = entry?.cravingLevel;
   }
 
   @override
@@ -177,6 +186,51 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
     }
   }
 
+  Future<void> _enterPlaceManually() async {
+    final controller = TextEditingController(text: _locationLabel ?? '');
+    final place = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Enter a place'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLength: 80,
+          textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(
+            labelText: 'Place name',
+            hintText: 'Home, Columbus, favorite café…',
+          ),
+          onSubmitted: (value) {
+            final trimmed = value.trim();
+            if (trimmed.isNotEmpty) Navigator.pop(context, trimmed);
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final trimmed = controller.text.trim();
+              if (trimmed.isNotEmpty) Navigator.pop(context, trimmed);
+            },
+            child: const Text('Use place'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (!mounted || place == null) return;
+    setState(() {
+      _latitude = null;
+      _longitude = null;
+      _locationLabel = place;
+      _locationMessage = null;
+    });
+  }
+
   Future<void> _save() async {
     if (_saving) return;
     setState(() => _saving = true);
@@ -189,7 +243,11 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
           latitude: _latitude,
           longitude: _longitude,
           locationLabel: _locationLabel,
-          clearLocation: _latitude == null || _longitude == null,
+          clearCoordinates: _latitude == null || _longitude == null,
+          clearLocationLabel: _locationLabel == null,
+          hungerLevel: _hungerLevel,
+          fullnessLevel: _fullnessLevel,
+          cravingLevel: _cravingLevel,
         );
         await widget.controller.updateEntry(updated);
         if (mounted) Navigator.of(context).pop(true);
@@ -204,6 +262,9 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
             latitude: _latitude,
             longitude: _longitude,
             locationLabel: _locationLabel,
+            hungerLevel: _hungerLevel,
+            fullnessLevel: _fullnessLevel,
+            cravingLevel: _cravingLevel,
           ),
         );
         if (mounted) Navigator.of(context).pop(result);
@@ -276,6 +337,26 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
             ],
           ),
           const SizedBox(height: 28),
+          if (widget.settings?.hungerScaleEnabled ?? false) ...[
+            _ReflectionScale(
+              title: 'How hungry were you before?',
+              lowLabel: 'Not hungry',
+              highLabel: 'Very hungry',
+              value: _hungerLevel,
+              onChanged: (value) => setState(() => _hungerLevel = value),
+            ),
+            const SizedBox(height: 24),
+          ],
+          if (widget.settings?.cravingScaleEnabled ?? false) ...[
+            _ReflectionScale(
+              title: 'How strong was the craving?',
+              lowLabel: 'No craving',
+              highLabel: 'Very strong',
+              value: _cravingLevel,
+              onChanged: (value) => setState(() => _cravingLevel = value),
+            ),
+            const SizedBox(height: 24),
+          ],
           Text(
             'How did it feel?',
             style: Theme.of(context).textTheme.titleLarge,
@@ -307,6 +388,16 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
             ],
           ),
           const SizedBox(height: 28),
+          if (widget.settings?.fullnessScaleEnabled ?? false) ...[
+            _ReflectionScale(
+              title: 'How full did you feel afterwards?',
+              lowLabel: 'Still hungry',
+              highLabel: 'Very full',
+              value: _fullnessLevel,
+              onChanged: (value) => setState(() => _fullnessLevel = value),
+            ),
+            const SizedBox(height: 28),
+          ],
           Text(
             'A note, if you want',
             style: Theme.of(context).textTheme.titleLarge,
@@ -325,7 +416,8 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
           const SizedBox(height: 20),
           Text('Place', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 10),
-          if (_latitude != null && _longitude != null)
+          if (_locationLabel != null ||
+              (_latitude != null && _longitude != null))
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -358,18 +450,35 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
                   ),
                 ],
               ),
-            )
-          else
-            OutlinedButton.icon(
-              onPressed: _findingLocation ? null : _addLocation,
-              icon: _findingLocation
-                  ? const SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.add_location_alt_outlined),
-              label: const Text('Add current location'),
             ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: _findingLocation ? null : _addLocation,
+                icon: _findingLocation
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.my_location_outlined),
+                label: Text(
+                  _locationLabel == null && _latitude == null
+                      ? 'Use current location'
+                      : 'Refresh location',
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: _findingLocation ? null : _enterPlaceManually,
+                icon: const Icon(Icons.edit_location_alt_outlined),
+                label: Text(
+                  _locationLabel == null ? 'Enter place' : 'Edit place',
+                ),
+              ),
+            ],
+          ),
           if (_locationMessage != null) ...[
             const SizedBox(height: 8),
             Text(
@@ -407,4 +516,103 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
 class _LocationIssue implements Exception {
   const _LocationIssue(this.message);
   final String message;
+}
+
+class _ReflectionScale extends StatelessWidget {
+  const _ReflectionScale({
+    required this.title,
+    required this.lowLabel,
+    required this.highLabel,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String title;
+  final String lowLabel;
+  final String highLabel;
+  final int? value;
+  final ValueChanged<int?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+            ),
+            if (value != null)
+              TextButton(
+                onPressed: () => onChanged(null),
+                child: const Text('Clear'),
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            for (var level = 1; level <= 5; level++) ...[
+              if (level > 1) const SizedBox(width: 8),
+              Expanded(
+                child: Semantics(
+                  label: '$title $level of 5',
+                  selected: value == level,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: () => onChanged(level),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 160),
+                      height: 46,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: value == level
+                            ? colors.primary
+                            : colors.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Text(
+                        '$level',
+                        style: TextStyle(
+                          color: value == level
+                              ? colors.onPrimary
+                              : colors.onSurface,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 7),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                lowLabel,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+            Expanded(
+              child: Text(
+                highLabel,
+                textAlign: TextAlign.end,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'Optional - choose what feels closest.',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ],
+    );
+  }
 }

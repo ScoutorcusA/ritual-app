@@ -35,6 +35,9 @@ class _MemoryRepository implements MealRepository {
   Future<void> deleteEntry(MealEntry entry) async {}
 
   @override
+  Future<void> deleteAllJournalData() async {}
+
+  @override
   Future<void> discardPhoto(String imagePath) async {}
 
   @override

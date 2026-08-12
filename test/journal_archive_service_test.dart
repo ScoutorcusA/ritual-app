@@ -48,6 +48,9 @@ void main() {
         latitude: 39.9612,
         longitude: -82.9988,
         locationLabel: 'Ohio',
+        hungerLevel: 4,
+        fullnessLevel: 3,
+        cravingLevel: 2,
       ),
       MealEntry(
         id: 8,
@@ -75,6 +78,9 @@ void main() {
     expect(imported[0].draft.latitude, 39.9612);
     expect(imported[0].draft.longitude, -82.9988);
     expect(imported[0].draft.locationLabel, 'Ohio');
+    expect(imported[0].draft.hungerLevel, 4);
+    expect(imported[0].draft.fullnessLevel, 3);
+    expect(imported[0].draft.cravingLevel, 2);
     expect(imported[0].photoBytes, firstBytes);
     expect(imported[0].photoExtension, '.jpg');
     expect(imported[1].draft.mealType, MealType.snack);

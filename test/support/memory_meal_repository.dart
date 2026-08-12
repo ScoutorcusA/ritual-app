@@ -27,6 +27,9 @@ class MemoryMealRepository implements MealRepository {
       latitude: draft.latitude,
       longitude: draft.longitude,
       locationLabel: draft.locationLabel,
+      hungerLevel: draft.hungerLevel,
+      fullnessLevel: draft.fullnessLevel,
+      cravingLevel: draft.cravingLevel,
     );
     entries.add(entry);
     return entry;
@@ -35,6 +38,13 @@ class MemoryMealRepository implements MealRepository {
   @override
   Future<void> deleteEntry(MealEntry entry) async {
     entries.removeWhere((candidate) => candidate.id == entry.id);
+  }
+
+  @override
+  Future<void> deleteAllJournalData() async {
+    entries.clear();
+    highlights.clear();
+    bestStreak = 0;
   }
 
   @override

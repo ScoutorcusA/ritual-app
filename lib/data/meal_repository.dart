@@ -13,6 +13,7 @@ abstract class MealRepository {
   Future<MealEntry> addEntry(MealDraft draft);
   Future<void> updateEntry(MealEntry entry);
   Future<void> deleteEntry(MealEntry entry);
+  Future<void> deleteAllJournalData();
   Future<String> keepCapturedPhoto(XFile temporaryPhoto);
   Future<void> discardPhoto(String imagePath);
   Future<int> loadBestStreak();
@@ -31,7 +32,7 @@ class SqliteMealRepository implements MealRepository {
     final databasePath = p.join(await getDatabasesPath(), 'ritual.db');
     _database = await openDatabase(
       databasePath,
-      version: 4,
+      version: 5,
       onCreate: (db, _) async {
         await db.execute('''
           CREATE TABLE meals(
@@ -44,7 +45,10 @@ class SqliteMealRepository implements MealRepository {
             latitude REAL,
             longitude REAL,
             location_label TEXT,
-            import_fingerprint TEXT
+            import_fingerprint TEXT,
+            hunger_level INTEGER,
+            fullness_level INTEGER,
+            craving_level INTEGER
           )
         ''');
         await db.execute('''
@@ -85,6 +89,15 @@ class SqliteMealRepository implements MealRepository {
             )
           ''');
         }
+        if (oldVersion < 5) {
+          await db.execute('ALTER TABLE meals ADD COLUMN hunger_level INTEGER');
+          await db.execute(
+            'ALTER TABLE meals ADD COLUMN fullness_level INTEGER',
+          );
+          await db.execute(
+            'ALTER TABLE meals ADD COLUMN craving_level INTEGER',
+          );
+        }
       },
     );
     return _database!;
@@ -110,6 +123,9 @@ class SqliteMealRepository implements MealRepository {
       latitude: draft.latitude,
       longitude: draft.longitude,
       locationLabel: draft.locationLabel,
+      hungerLevel: draft.hungerLevel,
+      fullnessLevel: draft.fullnessLevel,
+      cravingLevel: draft.cravingLevel,
     );
   }
 
@@ -127,6 +143,26 @@ class SqliteMealRepository implements MealRepository {
   Future<void> deleteEntry(MealEntry entry) async {
     await (await _db).delete('meals', where: 'id = ?', whereArgs: [entry.id]);
     await discardPhoto(entry.imagePath);
+  }
+
+  @override
+  Future<void> deleteAllJournalData() async {
+    final db = await _db;
+    await db.transaction((transaction) async {
+      await transaction.delete('daily_highlights');
+      await transaction.delete('meals');
+      await transaction.delete(
+        'preferences',
+        where: 'key = ?',
+        whereArgs: ['best_streak'],
+      );
+    });
+
+    final documents = await getApplicationDocumentsDirectory();
+    final journalPhotos = Directory(p.join(documents.path, 'ritual_photos'));
+    if (await journalPhotos.exists()) {
+      await journalPhotos.delete(recursive: true);
+    }
   }
 
   @override
@@ -260,6 +296,9 @@ class SqliteMealRepository implements MealRepository {
               latitude: draft.latitude,
               longitude: draft.longitude,
               locationLabel: draft.locationLabel,
+              hungerLevel: draft.hungerLevel,
+              fullnessLevel: draft.fullnessLevel,
+              cravingLevel: draft.cravingLevel,
             ),
           );
         }
@@ -291,6 +330,9 @@ class SqliteMealRepository implements MealRepository {
       latitude: row['latitude'] as double?,
       longitude: row['longitude'] as double?,
       locationLabel: row['location_label'] as String?,
+      hungerLevel: row['hunger_level'] as int?,
+      fullnessLevel: row['fullness_level'] as int?,
+      cravingLevel: row['craving_level'] as int?,
     );
   }
 
@@ -303,6 +345,9 @@ class SqliteMealRepository implements MealRepository {
     'latitude': draft.latitude,
     'longitude': draft.longitude,
     'location_label': draft.locationLabel,
+    'hunger_level': draft.hungerLevel,
+    'fullness_level': draft.fullnessLevel,
+    'craving_level': draft.cravingLevel,
   };
 
   Map<String, Object?> _entryToRow(MealEntry entry) => {
@@ -314,5 +359,8 @@ class SqliteMealRepository implements MealRepository {
     'latitude': entry.latitude,
     'longitude': entry.longitude,
     'location_label': entry.locationLabel,
+    'hunger_level': entry.hungerLevel,
+    'fullness_level': entry.fullnessLevel,
+    'craving_level': entry.cravingLevel,
   };
 }

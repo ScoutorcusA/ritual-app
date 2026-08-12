@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../controllers/journal_controller.dart';
+import '../controllers/settings_controller.dart';
 import '../models/meal_entry.dart';
 import '../theme/ritual_theme.dart';
 import '../utils/journal_days.dart';
@@ -11,9 +12,10 @@ import 'entry_detail_screen.dart';
 enum BrowseView { gallery, calendar }
 
 class BrowseScreen extends StatefulWidget {
-  const BrowseScreen({super.key, required this.controller});
+  const BrowseScreen({super.key, required this.controller, this.settings});
 
   final JournalController controller;
+  final SettingsController? settings;
 
   @override
   State<BrowseScreen> createState() => _BrowseScreenState();
@@ -152,8 +154,11 @@ class _BrowseScreenState extends State<BrowseScreen> {
   void _openEntry(MealEntry entry) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) =>
-            EntryDetailScreen(controller: widget.controller, entryId: entry.id),
+        builder: (_) => EntryDetailScreen(
+          controller: widget.controller,
+          entryId: entry.id,
+          settings: widget.settings,
+        ),
       ),
     );
   }

@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../controllers/journal_controller.dart';
+import '../controllers/settings_controller.dart';
 import '../insights/insight_engine.dart';
+import '../models/meal_entry.dart';
 import '../theme/ritual_theme.dart';
 import '../utils/journal_days.dart';
+import '../utils/journal_summary.dart';
 import '../widgets/daily_journal_card.dart';
 import '../widgets/insight_card.dart';
 import 'daily_journal_screen.dart';
@@ -14,10 +17,12 @@ class JournalScreen extends StatelessWidget {
     super.key,
     required this.controller,
     required this.onSettings,
+    this.settings,
   });
 
   final JournalController controller;
   final VoidCallback onSettings;
+  final SettingsController? settings;
 
   @override
   Widget build(BuildContext context) {
@@ -60,6 +65,7 @@ class JournalScreen extends StatelessWidget {
                           builder: (_) => DailyJournalScreen(
                             controller: controller,
                             day: group.day,
+                            settings: settings,
                           ),
                         ),
                       ),
@@ -157,11 +163,75 @@ class _JournalHeader extends StatelessWidget {
                 ],
               ),
             ),
+            if (controller.entries.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              _JournalSummaryCard(entries: controller.entries),
+            ],
           ],
         ),
       ),
     );
   }
+}
+
+class _JournalSummaryCard extends StatelessWidget {
+  const _JournalSummaryCard({required this.entries});
+
+  final List<MealEntry> entries;
+
+  @override
+  Widget build(BuildContext context) {
+    final summary = JournalSummary.fromEntries(entries);
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        child: Row(
+          children: [
+            _SummaryMetric(
+              value: '${summary.totalEntries}',
+              label: 'Total moments',
+            ),
+            _SummaryMetric(
+              value: summary.mealsPerLoggedDay.toStringAsFixed(1),
+              label: 'Per logged day',
+            ),
+            _SummaryMetric(
+              value: summary.typicalGapLabel,
+              label: 'Typical gap',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryMetric extends StatelessWidget {
+  const _SummaryMetric({required this.value, required this.label});
+
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+    child: Column(
+      children: [
+        Text(
+          value,
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.labelSmall,
+        ),
+      ],
+    ),
+  );
 }
 
 class _EmptyJournal extends StatelessWidget {

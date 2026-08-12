@@ -7,6 +7,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/meal_reminder_service.dart';
+
 enum AppLockMode { off, device, pin }
 
 class SettingsController extends ChangeNotifier {
@@ -14,26 +16,42 @@ class SettingsController extends ChangeNotifier {
     SharedPreferencesAsync? preferences,
     FlutterSecureStorage? secureStorage,
     LocalAuthentication? localAuthentication,
+    MealReminderScheduler? reminderScheduler,
   }) : _preferences = preferences ?? SharedPreferencesAsync(),
        _secureStorage = secureStorage ?? const FlutterSecureStorage(),
-       _localAuthentication = localAuthentication ?? LocalAuthentication();
+       _localAuthentication = localAuthentication ?? LocalAuthentication(),
+       _reminderScheduler =
+           reminderScheduler ?? const NoopMealReminderScheduler();
 
   static const _themeKey = 'theme_mode';
   static const _lockModeKey = 'app_lock_mode';
   static const _pinSaltKey = 'ritual_pin_salt';
   static const _pinHashKey = 'ritual_pin_hash';
+  static const _mealRemindersKey = 'meal_reminders_enabled';
+  static const _hungerScaleKey = 'hunger_scale_enabled';
+  static const _fullnessScaleKey = 'fullness_scale_enabled';
+  static const _cravingScaleKey = 'craving_scale_enabled';
   static const _hashRounds = 50000;
 
   final SharedPreferencesAsync _preferences;
   final FlutterSecureStorage _secureStorage;
   final LocalAuthentication _localAuthentication;
+  final MealReminderScheduler _reminderScheduler;
 
   ThemeMode _themeMode = ThemeMode.system;
   AppLockMode _lockMode = AppLockMode.off;
+  bool _mealRemindersEnabled = false;
+  bool _hungerScaleEnabled = false;
+  bool _fullnessScaleEnabled = false;
+  bool _cravingScaleEnabled = false;
 
   ThemeMode get themeMode => _themeMode;
   AppLockMode get lockMode => _lockMode;
   bool get lockEnabled => _lockMode != AppLockMode.off;
+  bool get mealRemindersEnabled => _mealRemindersEnabled;
+  bool get hungerScaleEnabled => _hungerScaleEnabled;
+  bool get fullnessScaleEnabled => _fullnessScaleEnabled;
+  bool get cravingScaleEnabled => _cravingScaleEnabled;
 
   Future<void> initialize() async {
     final storedTheme = await _preferences.getString(_themeKey);
@@ -56,6 +74,13 @@ class SettingsController extends ChangeNotifier {
         await _preferences.setString(_lockModeKey, _lockMode.name);
       }
     }
+    _mealRemindersEnabled =
+        await _preferences.getBool(_mealRemindersKey) ?? false;
+    _hungerScaleEnabled = await _preferences.getBool(_hungerScaleKey) ?? false;
+    _fullnessScaleEnabled =
+        await _preferences.getBool(_fullnessScaleKey) ?? false;
+    _cravingScaleEnabled =
+        await _preferences.getBool(_cravingScaleKey) ?? false;
   }
 
   Future<void> setThemeMode(ThemeMode value) async {
@@ -124,6 +149,37 @@ class SettingsController extends ChangeNotifier {
     await _preferences.setString(_lockModeKey, _lockMode.name);
     await _secureStorage.delete(key: _pinSaltKey);
     await _secureStorage.delete(key: _pinHashKey);
+  }
+
+  Future<bool> setMealRemindersEnabled(bool value) async {
+    if (_mealRemindersEnabled == value) return true;
+    if (value && !await _reminderScheduler.requestPermission()) return false;
+    _mealRemindersEnabled = value;
+    notifyListeners();
+    await _preferences.setBool(_mealRemindersKey, value);
+    if (!value) await _reminderScheduler.cancelAllReminders();
+    return true;
+  }
+
+  Future<void> setHungerScaleEnabled(bool value) async {
+    if (_hungerScaleEnabled == value) return;
+    _hungerScaleEnabled = value;
+    notifyListeners();
+    await _preferences.setBool(_hungerScaleKey, value);
+  }
+
+  Future<void> setFullnessScaleEnabled(bool value) async {
+    if (_fullnessScaleEnabled == value) return;
+    _fullnessScaleEnabled = value;
+    notifyListeners();
+    await _preferences.setBool(_fullnessScaleKey, value);
+  }
+
+  Future<void> setCravingScaleEnabled(bool value) async {
+    if (_cravingScaleEnabled == value) return;
+    _cravingScaleEnabled = value;
+    notifyListeners();
+    await _preferences.setBool(_cravingScaleKey, value);
   }
 
   String _hashPin(String pin, String salt) {

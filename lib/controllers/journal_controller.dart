@@ -82,6 +82,15 @@ class JournalController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> deleteAllJournalData() async {
+    await _repository.deleteAllJournalData();
+    _entries = const [];
+    _dailyHighlights = const {};
+    _currentStreak = 0;
+    _bestStreak = 0;
+    notifyListeners();
+  }
+
   Future<int> importEntries(List<MealImport> entries) async {
     final imported = await _repository.importEntries(entries);
     if (imported.isEmpty) return 0;

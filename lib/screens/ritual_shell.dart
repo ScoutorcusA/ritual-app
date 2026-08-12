@@ -82,6 +82,7 @@ class _RitualShellState extends State<RitualShell> {
           builder: (_) => MealEditorScreen(
             controller: widget.controller,
             imagePath: privatePath!,
+            settings: widget.settings,
           ),
         ),
       );
@@ -136,6 +137,7 @@ class _RitualShellState extends State<RitualShell> {
         children: [
           JournalScreen(
             controller: widget.controller,
+            settings: widget.settings,
             onSettings: () {
               final settings = widget.settings;
               if (settings != null) {
@@ -150,7 +152,10 @@ class _RitualShellState extends State<RitualShell> {
               }
             },
           ),
-          BrowseScreen(controller: widget.controller),
+          BrowseScreen(
+            controller: widget.controller,
+            settings: widget.settings,
+          ),
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,

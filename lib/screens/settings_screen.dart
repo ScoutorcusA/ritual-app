@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../controllers/journal_controller.dart';
 import '../controllers/settings_controller.dart';
 import '../services/journal_archive_service.dart';
+import '../services/journal_pdf_service.dart';
 import '../theme/ritual_theme.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -24,6 +25,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final JournalArchiveService _archiveService = JournalArchiveService();
+  final JournalPdfService _pdfService = JournalPdfService();
   bool _working = false;
 
   Future<void> _chooseLockMode(AppLockMode mode) async {
@@ -64,6 +66,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _exportJournal() async {
     if (_working) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.no_encryption_outlined),
+        title: const Text('This ZIP is not encrypted'),
+        content: const Text(
+          'Anyone who can open the exported file can see its photos, notes, '
+          'feelings, dates, and saved places. Store it somewhere private and '
+          'share it only with people you trust.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Export anyway'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true) return;
     setState(() => _working = true);
     try {
       final result = await _archiveService.createArchive(
@@ -85,6 +110,115 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) _message(error.message, error: true);
     } catch (error) {
       if (mounted) _message('Export failed: $error', error: true);
+    } finally {
+      if (mounted) setState(() => _working = false);
+    }
+  }
+
+  Future<void> _setReminders(bool enabled) async {
+    final changed = await widget.settings.setMealRemindersEnabled(enabled);
+    if (!mounted) return;
+    if (!changed && enabled) {
+      _message(
+        'Notifications were not enabled. Allow them in Android settings, then try again.',
+        error: true,
+      );
+    }
+  }
+
+  Future<void> _exportClinicianPdf() async {
+    if (_working || widget.journal.entries.isEmpty) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.health_and_safety_outlined),
+        title: const Text('Export a private health report?'),
+        content: const Text(
+          'The PDF includes meal photos, dates, reflections, feelings, saved '
+          'places, and ratings. It is not encrypted. Save and share it '
+          'carefully, and send it only to a clinician you trust.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Create PDF'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true) return;
+    setState(() => _working = true);
+    try {
+      final result = await _pdfService.createReport(widget.journal.entries);
+      final savedPath = await FilePicker.saveFile(
+        dialogTitle: 'Export clinician report',
+        fileName: result.fileName,
+        type: FileType.custom,
+        allowedExtensions: const ['pdf'],
+        bytes: result.bytes,
+      );
+      if (!mounted || savedPath == null) return;
+      _message(
+        '${result.entryCount} ${result.entryCount == 1 ? 'entry' : 'entries'} '
+        'exported to PDF.',
+      );
+    } catch (error) {
+      if (mounted) _message('PDF export failed: $error', error: true);
+    } finally {
+      if (mounted) setState(() => _working = false);
+    }
+  }
+
+  Future<void> _deleteAllJournalData() async {
+    if (_working || widget.journal.entries.isEmpty) return;
+    final entryCount = widget.journal.entries.length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: Icon(
+          Icons.delete_forever_outlined,
+          color: Theme.of(context).colorScheme.error,
+        ),
+        title: const Text('Delete all journal data?'),
+        content: Text(
+          'This permanently deletes all $entryCount '
+          '${entryCount == 1 ? 'entry' : 'entries'}, app-private photos, '
+          'calendar highlights, and streak history from this device. '
+          'Your theme, app lock, PIN, and reminder setting will stay.\n\n'
+          'This cannot be undone. Export first if you may want a copy.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Keep my journal'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete everything'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true) return;
+    setState(() => _working = true);
+    try {
+      await widget.journal.deleteAllJournalData();
+      if (mounted) _message('All journal entries and photos were deleted.');
+    } catch (error) {
+      if (mounted) {
+        _message(
+          'Ritual could not finish deleting the journal: $error',
+          error: true,
+        );
+      }
     } finally {
       if (mounted) setState(() => _working = false);
     }
@@ -199,6 +333,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
             ),
+            const _SectionTitle('Meal reflection'),
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    value: widget.settings.hungerScaleEnabled,
+                    onChanged: widget.settings.setHungerScaleEnabled,
+                    secondary: const Icon(Icons.restaurant_menu_rounded),
+                    title: const Text('Hunger before eating'),
+                    subtitle: const Text('Optional five-point check-in'),
+                  ),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    value: widget.settings.cravingScaleEnabled,
+                    onChanged: widget.settings.setCravingScaleEnabled,
+                    secondary: const Icon(Icons.bolt_outlined),
+                    title: const Text('Craving before eating'),
+                    subtitle: const Text('Optional five-point check-in'),
+                  ),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    value: widget.settings.fullnessScaleEnabled,
+                    onChanged: widget.settings.setFullnessScaleEnabled,
+                    secondary: const Icon(Icons.spa_outlined),
+                    title: const Text('Fullness after eating'),
+                    subtitle: const Text('Optional five-point check-in'),
+                  ),
+                ],
+              ),
+            ),
             const _SectionTitle('Privacy'),
             Card(
               clipBehavior: Clip.antiAlias,
@@ -217,7 +382,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Divider(height: 1),
                     RadioListTile<AppLockMode>(
                       value: AppLockMode.device,
-                      title: Text('Device security'),
+                      title: Row(
+                        children: [
+                          Text('Device security'),
+                          SizedBox(width: 8),
+                          _RecommendedBadge(),
+                        ],
+                      ),
                       subtitle: Text('Fingerprint, device PIN, or pattern'),
                       secondary: Icon(Icons.fingerprint_rounded),
                     ),
@@ -232,6 +403,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
             ),
+            const _SectionTitle('Reminders'),
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: SwitchListTile(
+                value: widget.settings.mealRemindersEnabled,
+                onChanged: _setReminders,
+                secondary: const Icon(Icons.notifications_none_rounded),
+                title: const Text('Mindful meal reminders'),
+                subtitle: const Text(
+                  'Local check-ins around 9:30 AM, 1:30 PM, 7:30 PM, and—only '
+                  'when the day is empty—9:30 PM. Logged meals are skipped.',
+                ),
+              ),
+            ),
             const _SectionTitle('Your data'),
             Card(
               clipBehavior: Clip.antiAlias,
@@ -242,10 +427,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     leading: const Icon(Icons.archive_outlined),
                     title: const Text('Export journal'),
                     subtitle: Text(
-                      '${widget.journal.entries.length} entries, metadata, and photos in one ZIP',
+                      '${widget.journal.entries.length} entries, metadata, and '
+                      'photos in one unencrypted ZIP',
                     ),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: _exportJournal,
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    enabled: !_working && widget.journal.entries.isNotEmpty,
+                    leading: const Icon(Icons.picture_as_pdf_outlined),
+                    title: const Text('Export clinician PDF'),
+                    subtitle: const Text(
+                      'Day-by-day meal report for a dietitian or doctor - unencrypted',
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: _exportClinicianPdf,
                   ),
                   const Divider(height: 1),
                   ListTile(
@@ -262,6 +459,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           )
                         : const Icon(Icons.chevron_right),
                     onTap: _importJournal,
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    enabled: !_working && widget.journal.entries.isNotEmpty,
+                    leading: Icon(
+                      Icons.delete_forever_outlined,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    title: Text(
+                      'Delete all journal data',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                    subtitle: const Text(
+                      'Permanently removes every entry, photo, and streak',
+                    ),
+                    onTap: _deleteAllJournalData,
                   ),
                 ],
               ),
@@ -289,7 +504,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 28),
             Text(
-              'Ritual 1.0 • ${DateFormat.yMMMM().format(DateTime.now())}',
+              'Ritual 1.2 • ${DateFormat.yMMMM().format(DateTime.now())}',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall,
             ),
@@ -298,6 +513,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
+}
+
+class _RecommendedBadge extends StatelessWidget {
+  const _RecommendedBadge();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+    decoration: BoxDecoration(
+      color: RitualColors.sage.withValues(alpha: 0.16),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Text(
+      'RECOMMENDED',
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+        color: RitualColors.sage,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 0.5,
+      ),
+    ),
+  );
 }
 
 class _SectionTitle extends StatelessWidget {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../controllers/journal_controller.dart';
+import '../controllers/settings_controller.dart';
 import '../models/meal_entry.dart';
 import '../theme/ritual_theme.dart';
 import '../widgets/meal_photo.dart';
@@ -12,10 +13,12 @@ class EntryDetailScreen extends StatelessWidget {
     super.key,
     required this.controller,
     required this.entryId,
+    this.settings,
   });
 
   final JournalController controller;
   final int entryId;
+  final SettingsController? settings;
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +44,7 @@ class EntryDetailScreen extends StatelessWidget {
                       controller: controller,
                       imagePath: currentEntry.imagePath,
                       entry: currentEntry,
+                      settings: settings,
                     ),
                   ),
                 ),
@@ -91,6 +95,32 @@ class EntryDetailScreen extends StatelessWidget {
                   ],
                 ),
               ],
+              if (currentEntry.hungerLevel != null ||
+                  currentEntry.cravingLevel != null ||
+                  currentEntry.fullnessLevel != null) ...[
+                const SizedBox(height: 24),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    if (currentEntry.hungerLevel != null)
+                      _ScaleChip(
+                        label: 'Hunger before',
+                        value: currentEntry.hungerLevel!,
+                      ),
+                    if (currentEntry.cravingLevel != null)
+                      _ScaleChip(
+                        label: 'Craving before',
+                        value: currentEntry.cravingLevel!,
+                      ),
+                    if (currentEntry.fullnessLevel != null)
+                      _ScaleChip(
+                        label: 'Fullness after',
+                        value: currentEntry.fullnessLevel!,
+                      ),
+                  ],
+                ),
+              ],
               if (currentEntry.note.isNotEmpty) ...[
                 const SizedBox(height: 26),
                 Text(
@@ -103,7 +133,8 @@ class EntryDetailScreen extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
               ],
-              if (currentEntry.hasLocation) ...[
+              if (currentEntry.hasLocation ||
+                  currentEntry.locationLabel != null) ...[
                 const SizedBox(height: 26),
                 Row(
                   children: [
@@ -151,4 +182,17 @@ class EntryDetailScreen extends StatelessWidget {
     await controller.deleteEntry(entry);
     if (context.mounted) Navigator.of(context).pop();
   }
+}
+
+class _ScaleChip extends StatelessWidget {
+  const _ScaleChip({required this.label, required this.value});
+
+  final String label;
+  final int value;
+
+  @override
+  Widget build(BuildContext context) => Chip(
+    avatar: const Icon(Icons.tune_rounded, size: 17),
+    label: Text('$label $value/5'),
+  );
 }

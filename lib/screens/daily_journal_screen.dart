@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../controllers/journal_controller.dart';
+import '../controllers/settings_controller.dart';
 import '../utils/journal_days.dart';
 import '../widgets/day_photo_collage.dart';
 import '../widgets/meal_card.dart';
@@ -12,10 +13,12 @@ class DailyJournalScreen extends StatelessWidget {
     super.key,
     required this.controller,
     required this.day,
+    this.settings,
   });
 
   final JournalController controller;
   final DateTime day;
+  final SettingsController? settings;
 
   @override
   Widget build(BuildContext context) {
@@ -63,6 +66,7 @@ class DailyJournalScreen extends StatelessWidget {
                           builder: (_) => EntryDetailScreen(
                             controller: controller,
                             entryId: entry.id,
+                            settings: settings,
                           ),
                         ),
                       ),
