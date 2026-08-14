@@ -22,6 +22,14 @@ void main() {
 
     expect(find.text('Your daily ritual'), findsOneWidget);
     expect(find.text('Begin with one mindful meal'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget.key is ValueKey<String> &&
+            (widget.key! as ValueKey<String>).value.startsWith('streak-day-'),
+      ),
+      findsNWidgets(7),
+    );
     expect(find.text('Notice what nourishes you'), findsOneWidget);
     expect(find.byTooltip('Photograph a meal'), findsOneWidget);
   });

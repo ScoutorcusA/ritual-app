@@ -10,6 +10,7 @@ import '../models/meal_entry.dart';
 import '../services/journal_archive_service.dart';
 import '../services/journal_csv_service.dart';
 import '../services/journal_pdf_service.dart';
+import '../services/meal_reminder_service.dart';
 import '../theme/ritual_theme.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -153,6 +154,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
         error: true,
       );
     }
+  }
+
+  Future<void> _pickReminderTime(
+    MealReminderKind kind,
+    int currentMinutes,
+  ) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(
+        hour: currentMinutes ~/ 60,
+        minute: currentMinutes % 60,
+      ),
+      helpText: 'Choose reminder time',
+    );
+    if (picked != null) {
+      await widget.settings.setReminderTime(
+        kind,
+        picked.hour * 60 + picked.minute,
+      );
+    }
+  }
+
+  String _formatMinutes(int minutes) => MaterialLocalizations.of(
+    context,
+  ).formatTimeOfDay(TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60));
+
+  Future<void> _restartWelcome() async {
+    await widget.settings.restartOnboarding();
+    if (mounted) Navigator.of(context).pop();
   }
 
   Future<void> _exportReport() async {
@@ -370,15 +400,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const _SectionTitle('Experience'),
             Card(
               clipBehavior: Clip.antiAlias,
-              child: SwitchListTile(
-                value: widget.settings.streaksEnabled,
-                onChanged: widget.settings.setStreaksEnabled,
-                secondary: const Icon(Icons.local_fire_department_outlined),
-                title: const Text('Daily streaks'),
-                subtitle: const Text(
-                  'Show streak progress and first-entry celebrations. Turning '
-                  'this off does not delete your progress.',
-                ),
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    value: widget.settings.streaksEnabled,
+                    onChanged: widget.settings.setStreaksEnabled,
+                    secondary: const Icon(Icons.local_fire_department_outlined),
+                    title: const Text('Daily streaks'),
+                    subtitle: const Text(
+                      'Show streak progress and first-entry celebrations. Turning '
+                      'this off does not delete your progress.',
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.auto_awesome_outlined),
+                    title: const Text('Welcome setup'),
+                    subtitle: const Text('Review your experience choices'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: _restartWelcome,
+                  ),
+                ],
               ),
             ),
             const _SectionTitle('Meal reflection'),
@@ -454,15 +496,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const _SectionTitle('Reminders'),
             Card(
               clipBehavior: Clip.antiAlias,
-              child: SwitchListTile(
-                value: widget.settings.mealRemindersEnabled,
-                onChanged: _setReminders,
-                secondary: const Icon(Icons.notifications_none_rounded),
-                title: const Text('Mindful meal reminders'),
-                subtitle: const Text(
-                  'Local check-ins around 9:30 AM, 1:30 PM, 7:30 PM, and—only '
-                  'when the day is empty—9:30 PM. Logged meals are skipped.',
-                ),
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    value: widget.settings.mealRemindersEnabled,
+                    onChanged: _setReminders,
+                    secondary: const Icon(Icons.notifications_none_rounded),
+                    title: const Text('Mindful meal reminders'),
+                    subtitle: const Text(
+                      'Local check-ins that automatically skip meals already logged.',
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  _ReminderTimeTile(
+                    label: 'Breakfast',
+                    time: _formatMinutes(
+                      widget.settings.reminderSchedule.breakfastMinutes,
+                    ),
+                    onTap: () => _pickReminderTime(
+                      MealReminderKind.breakfast,
+                      widget.settings.reminderSchedule.breakfastMinutes,
+                    ),
+                  ),
+                  _ReminderTimeTile(
+                    label: 'Lunch',
+                    time: _formatMinutes(
+                      widget.settings.reminderSchedule.lunchMinutes,
+                    ),
+                    onTap: () => _pickReminderTime(
+                      MealReminderKind.lunch,
+                      widget.settings.reminderSchedule.lunchMinutes,
+                    ),
+                  ),
+                  _ReminderTimeTile(
+                    label: 'Dinner',
+                    time: _formatMinutes(
+                      widget.settings.reminderSchedule.dinnerMinutes,
+                    ),
+                    onTap: () => _pickReminderTime(
+                      MealReminderKind.dinner,
+                      widget.settings.reminderSchedule.dinnerMinutes,
+                    ),
+                  ),
+                  _ReminderTimeTile(
+                    label: 'Empty-day check-in',
+                    time: _formatMinutes(
+                      widget.settings.reminderSchedule.emptyDayMinutes,
+                    ),
+                    onTap: () => _pickReminderTime(
+                      MealReminderKind.emptyDay,
+                      widget.settings.reminderSchedule.emptyDayMinutes,
+                    ),
+                  ),
+                ],
               ),
             ),
             const _SectionTitle('Your data'),
@@ -552,7 +638,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 28),
             Text(
-              'Ritual 1.4 • ${DateFormat.yMMMM().format(DateTime.now())}',
+              'Ritual 1.5 • ${DateFormat.yMMMM().format(DateTime.now())}',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall,
             ),
@@ -561,6 +647,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
+}
+
+class _ReminderTimeTile extends StatelessWidget {
+  const _ReminderTimeTile({
+    required this.label,
+    required this.time,
+    required this.onTap,
+  });
+
+  final String label;
+  final String time;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+    leading: const SizedBox(width: 24),
+    title: Text(label),
+    trailing: Text(time, style: Theme.of(context).textTheme.titleSmall),
+    onTap: onTap,
+  );
 }
 
 class _RecommendedBadge extends StatelessWidget {

@@ -318,6 +318,7 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
                 ChoiceChip(
                   label: Text(type.label),
                   selected: _mealType == type,
+                  showCheckmark: false,
                   selectedColor: dark
                       ? const Color(0xFF3B3A34)
                       : RitualColors.ink,
@@ -372,6 +373,7 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
                 FilterChip(
                   label: Text(feeling),
                   selected: _feelings.contains(feeling),
+                  showCheckmark: false,
                   selectedColor: RitualColors.sage.withValues(alpha: 0.25),
                   backgroundColor: colors.surface,
                   checkmarkColor: colors.onSurface,

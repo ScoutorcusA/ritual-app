@@ -89,6 +89,22 @@ void main() {
       expect(settings.mealRemindersEnabled, isFalse);
     },
   );
+
+  test('custom reminder times and onboarding status persist', () async {
+    final settings = SettingsController();
+    await settings.initialize();
+
+    expect(settings.onboardingComplete, isFalse);
+    await settings.setReminderTime(MealReminderKind.breakfast, 8 * 60 + 15);
+    await settings.setReminderTime(MealReminderKind.dinner, 20 * 60 + 5);
+    await settings.completeOnboarding();
+
+    final reloaded = SettingsController();
+    await reloaded.initialize();
+    expect(reloaded.reminderSchedule.breakfastMinutes, 8 * 60 + 15);
+    expect(reloaded.reminderSchedule.dinnerMinutes, 20 * 60 + 5);
+    expect(reloaded.onboardingComplete, isTrue);
+  });
 }
 
 class _FakeReminderScheduler implements MealReminderScheduler {
@@ -109,6 +125,7 @@ class _FakeReminderScheduler implements MealReminderScheduler {
   Future<void> sync({
     required List<MealEntry> entries,
     required bool enabled,
+    ReminderSchedule schedule = const ReminderSchedule(),
   }) async {}
 
   @override

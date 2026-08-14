@@ -146,31 +146,40 @@ class _JournalHeader extends StatelessWidget {
                   color: RitualColors.ink,
                   borderRadius: BorderRadius.circular(22),
                 ),
-                child: Row(
+                child: Column(
                   children: [
-                    const Icon(
-                      Icons.local_fire_department_rounded,
-                      color: RitualColors.honey,
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.local_fire_department_rounded,
+                          color: RitualColors.honey,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            controller.currentStreak == 0
+                                ? 'Begin with one mindful meal'
+                                : '${controller.currentStreak} day streak',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  color: RitualColors.paper,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        ),
+                        Text(
+                          'Best ${controller.bestStreak}',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: RitualColors.paper.withValues(
+                                  alpha: 0.72,
+                                ),
+                              ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        controller.currentStreak == 0
-                            ? 'Begin with one mindful meal'
-                            : '${controller.currentStreak} day streak',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(
-                              color: RitualColors.paper,
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
-                    ),
-                    Text(
-                      'Best ${controller.bestStreak}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: RitualColors.paper.withValues(alpha: 0.72),
-                      ),
-                    ),
+                    const SizedBox(height: 16),
+                    _StreakWeek(entries: controller.entries),
                   ],
                 ),
               ),
@@ -181,6 +190,100 @@ class _JournalHeader extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _StreakWeek extends StatelessWidget {
+  const _StreakWeek({required this.entries});
+
+  final List<MealEntry> entries;
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final monday = today.subtract(Duration(days: today.weekday - 1));
+    final loggedDays = entries
+        .map(
+          (entry) => DateTime(
+            entry.createdAt.year,
+            entry.createdAt.month,
+            entry.createdAt.day,
+          ),
+        )
+        .toSet();
+    const names = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        for (var index = 0; index < 7; index++)
+          _StreakDay(
+            label: names[index],
+            date: monday.add(Duration(days: index)),
+            today: today,
+            complete: loggedDays.contains(monday.add(Duration(days: index))),
+          ),
+      ],
+    );
+  }
+}
+
+class _StreakDay extends StatelessWidget {
+  const _StreakDay({
+    required this.label,
+    required this.date,
+    required this.today,
+    required this.complete,
+  });
+
+  final String label;
+  final DateTime date;
+  final DateTime today;
+  final bool complete;
+
+  @override
+  Widget build(BuildContext context) {
+    final isToday = date == today;
+    final isFuture = date.isAfter(today);
+    final muted = RitualColors.paper.withValues(alpha: isFuture ? 0.3 : 0.62);
+    return Semantics(
+      label:
+          '${DateFormat.EEEE().format(date)}, ${complete ? 'logged' : 'not logged'}',
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: isToday ? RitualColors.honey : muted,
+              fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 7),
+          Container(
+            key: ValueKey('streak-day-${date.year}-${date.month}-${date.day}'),
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: complete
+                  ? RitualColors.honey
+                  : RitualColors.paper.withValues(alpha: 0.08),
+              border: Border.all(
+                color: isToday ? RitualColors.honey : muted,
+                width: isToday ? 2 : 1,
+              ),
+            ),
+            child: complete
+                ? const Icon(
+                    Icons.check_rounded,
+                    size: 18,
+                    color: RitualColors.ink,
+                  )
+                : null,
+          ),
+        ],
       ),
     );
   }

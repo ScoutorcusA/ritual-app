@@ -6,6 +6,7 @@ import 'controllers/journal_controller.dart';
 import 'controllers/settings_controller.dart';
 import 'data/meal_repository.dart';
 import 'screens/ritual_shell.dart';
+import 'screens/welcome_screen.dart';
 import 'services/meal_reminder_service.dart';
 import 'theme/ritual_theme.dart';
 import 'widgets/app_lock_gate.dart';
@@ -64,6 +65,7 @@ class _RitualAppState extends State<RitualApp> with WidgetsBindingObserver {
           await widget.reminders.sync(
             entries: _controller.entries,
             enabled: widget.settings.mealRemindersEnabled,
+            schedule: widget.settings.reminderSchedule,
           );
         } catch (_) {
           // A notification scheduling failure must never block the journal.
@@ -96,10 +98,9 @@ class _RitualAppState extends State<RitualApp> with WidgetsBindingObserver {
         themeMode: widget.settings.themeMode,
         home: AppLockGate(
           settings: widget.settings,
-          child: RitualShell(
-            controller: _controller,
-            settings: widget.settings,
-          ),
+          child: widget.settings.onboardingComplete
+              ? RitualShell(controller: _controller, settings: widget.settings)
+              : WelcomeScreen(settings: widget.settings),
         ),
       ),
     );

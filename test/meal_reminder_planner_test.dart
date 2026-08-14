@@ -71,6 +71,30 @@ void main() {
       containsAll([MealReminderKind.breakfast, MealReminderKind.dinner]),
     );
   });
+
+  test('uses the user-defined reminder schedule', () {
+    final reminders = planner.plan(
+      entries: const [],
+      now: DateTime(2026, 8, 12, 6),
+      days: 1,
+      schedule: const ReminderSchedule(
+        breakfastMinutes: 8 * 60 + 15,
+        lunchMinutes: 12 * 60,
+        dinnerMinutes: 18 * 60 + 45,
+        emptyDayMinutes: 22 * 60,
+      ),
+    );
+
+    expect(
+      reminders.map((reminder) => reminder.scheduledAt),
+      containsAll([
+        DateTime(2026, 8, 12, 8, 15),
+        DateTime(2026, 8, 12, 12),
+        DateTime(2026, 8, 12, 18, 45),
+        DateTime(2026, 8, 12, 22),
+      ]),
+    );
+  });
 }
 
 MealEntry _entry(MealType type, DateTime createdAt) => MealEntry(

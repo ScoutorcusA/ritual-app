@@ -52,7 +52,7 @@ class JournalPdfService {
       title: 'Ritual food journal report',
       author: 'Ritual',
       subject: 'Self-recorded meal reflection journal',
-      creator: 'Ritual 1.4',
+      creator: 'Ritual 1.5',
     );
     document.addPage(
       pdf.MultiPage(

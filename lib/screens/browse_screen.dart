@@ -292,6 +292,7 @@ class _FilterChip extends StatelessWidget {
       child: ChoiceChip(
         label: Text(label),
         selected: selected,
+        showCheckmark: false,
         selectedColor: dark ? const Color(0xFF3B3A34) : RitualColors.ink,
         backgroundColor: colors.surface,
         labelStyle: TextStyle(

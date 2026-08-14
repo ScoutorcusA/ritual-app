@@ -34,6 +34,11 @@ class SettingsController extends ChangeNotifier {
   static const _hungerScaleKey = 'hunger_scale_enabled';
   static const _fullnessScaleKey = 'fullness_scale_enabled';
   static const _cravingScaleKey = 'craving_scale_enabled';
+  static const _onboardingCompleteKey = 'onboarding_complete';
+  static const _breakfastReminderKey = 'breakfast_reminder_minutes';
+  static const _lunchReminderKey = 'lunch_reminder_minutes';
+  static const _dinnerReminderKey = 'dinner_reminder_minutes';
+  static const _emptyDayReminderKey = 'empty_day_reminder_minutes';
   static const _hashRounds = 50000;
 
   final SharedPreferencesAsync _preferences;
@@ -48,6 +53,8 @@ class SettingsController extends ChangeNotifier {
   bool _hungerScaleEnabled = false;
   bool _fullnessScaleEnabled = false;
   bool _cravingScaleEnabled = false;
+  bool _onboardingComplete = false;
+  ReminderSchedule _reminderSchedule = const ReminderSchedule();
 
   ThemeMode get themeMode => _themeMode;
   AppLockMode get lockMode => _lockMode;
@@ -57,6 +64,8 @@ class SettingsController extends ChangeNotifier {
   bool get hungerScaleEnabled => _hungerScaleEnabled;
   bool get fullnessScaleEnabled => _fullnessScaleEnabled;
   bool get cravingScaleEnabled => _cravingScaleEnabled;
+  bool get onboardingComplete => _onboardingComplete;
+  ReminderSchedule get reminderSchedule => _reminderSchedule;
 
   Future<void> initialize() async {
     final storedTheme = await _preferences.getString(_themeKey);
@@ -87,6 +96,18 @@ class SettingsController extends ChangeNotifier {
         await _preferences.getBool(_fullnessScaleKey) ?? false;
     _cravingScaleEnabled =
         await _preferences.getBool(_cravingScaleKey) ?? false;
+    _onboardingComplete =
+        await _preferences.getBool(_onboardingCompleteKey) ?? false;
+    _reminderSchedule = ReminderSchedule(
+      breakfastMinutes:
+          await _preferences.getInt(_breakfastReminderKey) ?? 9 * 60 + 30,
+      lunchMinutes:
+          await _preferences.getInt(_lunchReminderKey) ?? 13 * 60 + 30,
+      dinnerMinutes:
+          await _preferences.getInt(_dinnerReminderKey) ?? 19 * 60 + 30,
+      emptyDayMinutes:
+          await _preferences.getInt(_emptyDayReminderKey) ?? 21 * 60 + 30,
+    );
   }
 
   Future<void> setThemeMode(ThemeMode value) async {
@@ -181,6 +202,48 @@ class SettingsController extends ChangeNotifier {
 
   Future<void> openNotificationSettings() =>
       _reminderScheduler.openNotificationSettings();
+
+  Future<void> setReminderTime(MealReminderKind kind, int minutes) async {
+    if (minutes < 0 || minutes >= 24 * 60) {
+      throw const FormatException('Reminder time must be within one day.');
+    }
+    final current = _reminderSchedule;
+    _reminderSchedule = ReminderSchedule(
+      breakfastMinutes: kind == MealReminderKind.breakfast
+          ? minutes
+          : current.breakfastMinutes,
+      lunchMinutes: kind == MealReminderKind.lunch
+          ? minutes
+          : current.lunchMinutes,
+      dinnerMinutes: kind == MealReminderKind.dinner
+          ? minutes
+          : current.dinnerMinutes,
+      emptyDayMinutes: kind == MealReminderKind.emptyDay
+          ? minutes
+          : current.emptyDayMinutes,
+    );
+    notifyListeners();
+    final key = switch (kind) {
+      MealReminderKind.breakfast => _breakfastReminderKey,
+      MealReminderKind.lunch => _lunchReminderKey,
+      MealReminderKind.dinner => _dinnerReminderKey,
+      MealReminderKind.emptyDay => _emptyDayReminderKey,
+    };
+    await _preferences.setInt(key, minutes);
+  }
+
+  Future<void> completeOnboarding() async {
+    if (_onboardingComplete) return;
+    _onboardingComplete = true;
+    notifyListeners();
+    await _preferences.setBool(_onboardingCompleteKey, true);
+  }
+
+  Future<void> restartOnboarding() async {
+    _onboardingComplete = false;
+    notifyListeners();
+    await _preferences.setBool(_onboardingCompleteKey, false);
+  }
 
   Future<void> setStreaksEnabled(bool value) async {
     if (_streaksEnabled == value) return;

@@ -166,6 +166,19 @@ void main() {
       find.widgetWithText(FilterChip, 'Happy'),
     );
     expect(feelingChip.labelStyle?.color, darkTheme.colorScheme.onSurface);
+    expect(feelingChip.showCheckmark, isFalse);
+    final happy = find.widgetWithText(FilterChip, 'Happy');
+    final calm = find.widgetWithText(FilterChip, 'Calm');
+    final originalSize = tester.getSize(happy);
+    final originalRelativePosition =
+        tester.getTopLeft(calm) - tester.getTopLeft(happy);
+    await tester.tap(happy);
+    await tester.pump();
+    expect(tester.getSize(happy), originalSize);
+    expect(
+      tester.getTopLeft(calm) - tester.getTopLeft(happy),
+      originalRelativePosition,
+    );
   });
 }
 

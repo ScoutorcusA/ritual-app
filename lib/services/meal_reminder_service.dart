@@ -9,6 +9,20 @@ enum MealReminderKind { breakfast, lunch, dinner, emptyDay }
 
 enum ReminderPermissionStatus { granted, denied, unavailable }
 
+class ReminderSchedule {
+  const ReminderSchedule({
+    this.breakfastMinutes = 9 * 60 + 30,
+    this.lunchMinutes = 13 * 60 + 30,
+    this.dinnerMinutes = 19 * 60 + 30,
+    this.emptyDayMinutes = 21 * 60 + 30,
+  });
+
+  final int breakfastMinutes;
+  final int lunchMinutes;
+  final int dinnerMinutes;
+  final int emptyDayMinutes;
+}
+
 class MealReminder {
   const MealReminder({
     required this.id,
@@ -34,6 +48,7 @@ class MealReminderPlanner {
     required List<MealEntry> entries,
     required DateTime now,
     int days = scheduleDays,
+    ReminderSchedule schedule = const ReminderSchedule(),
   }) {
     final reminders = <MealReminder>[];
     for (var offset = 0; offset < days; offset++) {
@@ -47,8 +62,7 @@ class MealReminderPlanner {
         reminders,
         now: now,
         day: day,
-        hour: 9,
-        minute: 30,
+        minutes: schedule.breakfastMinutes,
         kind: MealReminderKind.breakfast,
         type: MealType.breakfast,
         loggedTypes: loggedTypes,
@@ -59,8 +73,7 @@ class MealReminderPlanner {
         reminders,
         now: now,
         day: day,
-        hour: 13,
-        minute: 30,
+        minutes: schedule.lunchMinutes,
         kind: MealReminderKind.lunch,
         type: MealType.lunch,
         loggedTypes: loggedTypes,
@@ -71,8 +84,7 @@ class MealReminderPlanner {
         reminders,
         now: now,
         day: day,
-        hour: 19,
-        minute: 30,
+        minutes: schedule.dinnerMinutes,
         kind: MealReminderKind.dinner,
         type: MealType.dinner,
         loggedTypes: loggedTypes,
@@ -80,7 +92,7 @@ class MealReminderPlanner {
         body: 'Notice what dinner felt like, without scoring or judging it.',
       );
 
-      final night = DateTime(day.year, day.month, day.day, 21, 30);
+      final night = _atMinutes(day, schedule.emptyDayMinutes);
       if (dayEntries.isEmpty && night.isAfter(now)) {
         reminders.add(
           MealReminder(
@@ -101,15 +113,14 @@ class MealReminderPlanner {
     List<MealReminder> reminders, {
     required DateTime now,
     required DateTime day,
-    required int hour,
-    required int minute,
+    required int minutes,
     required MealReminderKind kind,
     required MealType type,
     required Set<MealType> loggedTypes,
     required String title,
     required String body,
   }) {
-    final scheduledAt = DateTime(day.year, day.month, day.day, hour, minute);
+    final scheduledAt = _atMinutes(day, minutes);
     if (loggedTypes.contains(type) || !scheduledAt.isAfter(now)) return;
     reminders.add(
       MealReminder(
@@ -129,13 +140,20 @@ class MealReminderPlanner {
 
   bool _sameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
+
+  DateTime _atMinutes(DateTime day, int minutes) =>
+      DateTime(day.year, day.month, day.day, minutes ~/ 60, minutes % 60);
 }
 
 abstract class MealReminderScheduler {
   Future<void> initialize();
   Future<ReminderPermissionStatus> requestPermission();
   Future<void> openNotificationSettings();
-  Future<void> sync({required List<MealEntry> entries, required bool enabled});
+  Future<void> sync({
+    required List<MealEntry> entries,
+    required bool enabled,
+    ReminderSchedule schedule = const ReminderSchedule(),
+  });
   Future<void> cancelAllReminders();
 }
 
@@ -156,6 +174,7 @@ class NoopMealReminderScheduler implements MealReminderScheduler {
   Future<void> sync({
     required List<MealEntry> entries,
     required bool enabled,
+    ReminderSchedule schedule = const ReminderSchedule(),
   }) async {}
 
   @override
@@ -258,6 +277,7 @@ class LocalMealReminderService implements MealReminderScheduler {
   Future<void> sync({
     required List<MealEntry> entries,
     required bool enabled,
+    ReminderSchedule schedule = const ReminderSchedule(),
   }) async {
     if (!_ready) return;
     await cancelAllReminders();
@@ -266,7 +286,11 @@ class LocalMealReminderService implements MealReminderScheduler {
     if (!_timezoneReady) return;
 
     final now = timezone.TZDateTime.now(timezone.local);
-    final reminders = _planner.plan(entries: entries, now: now);
+    final reminders = _planner.plan(
+      entries: entries,
+      now: now,
+      schedule: schedule,
+    );
     for (final reminder in reminders) {
       final value = reminder.scheduledAt;
       final scheduledAt = timezone.TZDateTime(

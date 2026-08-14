@@ -2,6 +2,8 @@
 
 [![Build Android APK](https://github.com/ScoutorcusA/ritual-app/actions/workflows/android-release.yml/badge.svg)](https://github.com/ScoutorcusA/ritual-app/actions/workflows/android-release.yml)
 
+[Read the complete Ritual wiki](https://github.com/ScoutorcusA/ritual-app/wiki) for every setting, insight rule, privacy detail, data format, and release workflow.
+
 Ritual is a private, mindful food photo journal built with Flutter. It helps people notice meals, feelings, hunger, cravings, fullness, and eating patterns without counting calories or labeling food as good or bad.
 
 The app is Android-first, works entirely on-device, and has no account, cloud sync, advertisements, subscriptions, analytics SDK, or feature paywall.
@@ -70,6 +72,9 @@ PDF, CSV, and ZIP exports are **not encrypted**. Ritual warns about this before 
 ## Appearance and accessibility
 
 - Light, dark, or system theme
+- Guided first-run setup for theme, reflection prompts, streaks, and reminders
+- User-defined breakfast, lunch, dinner, and empty-day reminder times
+- Duolingo-style Monday-through-Sunday streak progress
 - Dark-mode-safe meal, feeling, and gallery filters
 - Large tappable calendar days and journal cards
 - Semantic labels for day cards and moment counts
