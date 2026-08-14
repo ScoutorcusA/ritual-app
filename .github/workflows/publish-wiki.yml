@@ -27,11 +27,16 @@ jobs:
           WIKI_REMOTE: https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.wiki.git
         run: |
           set -euo pipefail
-          git clone "$WIKI_REMOTE" wiki-repository || {
-            mkdir wiki-repository
-            git -C wiki-repository init
-            git -C wiki-repository remote add origin "$WIKI_REMOTE"
-          }
+          wiki_remote_check_log="$(mktemp)"
+          if ! git ls-remote "$WIKI_REMOTE" > /dev/null 2>"$wiki_remote_check_log"; then
+            if grep -Eqi "repository( .+)? not found" "$wiki_remote_check_log"; then
+              echo "GitHub wiki repository was not found. Skipping wiki publish."
+              exit 0
+            fi
+            cat "$wiki_remote_check_log"
+            exit 1
+          fi
+          git clone "$WIKI_REMOTE" wiki-repository
           cp wiki/*.md wiki-repository/
           git -C wiki-repository config user.name "github-actions[bot]"
           git -C wiki-repository config user.email "41898282+github-actions[bot]@users.noreply.github.com"
