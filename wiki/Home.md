@@ -9,6 +9,8 @@ Ritual is an Android-first, local-only mindful food photo journal. It is designe
 - [[Journal, Browse, and Insights]] — daily cards, calendar behavior, summaries, and every insight rule
 - [[Reminders and Streaks]] — scheduling rules, custom times, weekday progress, and milestones
 - [[Privacy and Security]] — storage, permissions, app lock, and limitations
+- [[Privacy Policy]] — the public policy linked from Ritual and Google Play
+- [[Google Play Declarations]] — exact Data Safety and Health Apps answers
 - [[Export and Import]] — ZIP backup, PDF/CSV reports, ranges, and validation
 - [[Architecture and Data]] — Flutter structure, SQLite schema, image lifecycle, and state flow
 - [[Development, Testing, and Releases]] — local development, automated checks, signing, and APK releases

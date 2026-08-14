@@ -55,6 +55,19 @@ void main() {
     await tester.scrollUntilVisible(find.text('Device security'), 300);
     expect(find.text('RECOMMENDED'), findsOneWidget);
 
+    await tester.scrollUntilVisible(
+      find.text('Privacy policy & health disclaimer'),
+      300,
+    );
+    await tester.tap(find.text('Privacy policy & health disclaimer'));
+    await tester.pumpAndSettle();
+    expect(find.text('Privacy & health'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Health disclaimer'), 300);
+    expect(find.text('Health disclaimer'), findsOneWidget);
+    expect(find.textContaining('not a medical device'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
     await tester.scrollUntilVisible(find.text('Mindful meal reminders'), 300);
     await tester.tap(find.text('Mindful meal reminders'));
     await tester.pump();

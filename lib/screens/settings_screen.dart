@@ -12,6 +12,7 @@ import '../services/journal_csv_service.dart';
 import '../services/journal_pdf_service.dart';
 import '../services/meal_reminder_service.dart';
 import '../theme/ritual_theme.dart';
+import 'privacy_policy_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
@@ -490,6 +491,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       secondary: Icon(Icons.pin_outlined),
                     ),
                   ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: ListTile(
+                leading: const Icon(Icons.policy_outlined),
+                title: const Text('Privacy policy & health disclaimer'),
+                subtitle: const Text('How Ritual handles your journal data'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const PrivacyPolicyScreen(),
+                  ),
                 ),
               ),
             ),
