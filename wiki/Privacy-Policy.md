@@ -16,7 +16,7 @@ Depending on the features a user chooses, Ritual may access or store:
 - meal photographs taken through the device camera;
 - meal type, feelings, notes, date, and time;
 - optional hunger, craving, and fullness ratings;
-- optional precise or approximate device coordinates and a place label;
+- an optional city-and-country label; older or imported entries may contain coordinates created by earlier versions;
 - app preferences, reminder times, streak progress, and calendar highlights;
 - an optional four-digit Ritual PIN hash and salt, or the result of Android device authentication.
 
@@ -28,11 +28,11 @@ Journal records are stored in a SQLite database inside Ritual's Android applicat
 
 Ritual does not transmit journal entries, photographs, ratings, notes, coordinates, identifiers, diagnostics, or usage activity to Ritual or to advertising or analytics companies. The release application does not request general internet access.
 
-When a user requests a place name, Ritual calls Android's system geocoding service. The device or its configured geocoding provider may process coordinates to return a place description. Ritual does not control that provider's data practices; those practices are governed by the device provider's applicable privacy terms. A user can avoid geocoding by entering a place manually or by omitting location.
+When a user requests a place name, Ritual obtains only approximate foreground location and calls Android's system geocoding service. The device or its configured geocoding provider may process the approximate coordinates to return a city and country. Ritual retains the city-and-country label rather than the newly obtained raw coordinates. Ritual does not control that provider's data practices; those practices are governed by the device provider's applicable privacy terms. A user can avoid geocoding by entering a city manually or by omitting location.
 
 ## Permissions
 
-- **Location:** Requested only after the user selects **Use current location** while editing an entry. Ritual uses foreground location for that user-initiated request and does not request background location.
+- **Approximate location:** Requested only after the user selects **Use approximate location** while editing an entry. Ritual requests coarse foreground location for that user-initiated request and does not request precise or background location.
 - **Notifications:** Requested only if the user enables meal reminders. Notifications are scheduled locally.
 - **Camera:** Used when the user chooses to photograph a meal through Android's camera flow.
 - **Device authentication:** Used only when the user enables the recommended device-security app lock. Fingerprint templates and device credentials are handled by Android and are not provided to Ritual.

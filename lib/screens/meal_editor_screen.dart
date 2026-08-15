@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:geocoding/geocoding.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator_platform_interface/geolocator_platform_interface.dart';
@@ -8,6 +7,7 @@ import 'package:geolocator_platform_interface/geolocator_platform_interface.dart
 import '../controllers/journal_controller.dart';
 import '../controllers/settings_controller.dart';
 import '../models/meal_entry.dart';
+import '../services/city_geocoder.dart';
 import '../theme/ritual_theme.dart';
 import '../widgets/meal_photo.dart';
 
@@ -32,6 +32,7 @@ class MealEditorScreen extends StatefulWidget {
 }
 
 class _MealEditorScreenState extends State<MealEditorScreen> {
+  static const _cityGeocoder = CityGeocoder();
   late MealType _mealType;
   late Set<String> _feelings;
   late TextEditingController _noteController;
@@ -100,11 +101,10 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
       }
       final lastKnown = await geolocator.getLastKnownPosition();
       Position position;
-      var usedLastKnown = false;
       try {
         position = await geolocator.getCurrentPosition(
           locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.medium,
+            accuracy: LocationAccuracy.low,
             timeLimit: Duration(seconds: 30),
           ),
         );
@@ -116,47 +116,36 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
           );
         }
         position = lastKnown;
-        usedLastKnown = true;
       } on PlatformException {
         if (lastKnown == null) rethrow;
         position = lastKnown;
-        usedLastKnown = true;
       }
-      String? label;
       try {
-        final geocoder = Geocoding();
-        if (await geocoder.isPresent()) {
-          final places = await geocoder
-              .placemarkFromCoordinates(position.latitude, position.longitude)
-              .timeout(const Duration(seconds: 8));
-          if (places.isNotEmpty) {
-            final place = places.first;
-            label = _firstNonEmpty([
-              place.administrativeArea,
-              place.locality,
-              place.subAdministrativeArea,
-              place.country,
-            ]);
-          }
-        }
-      } catch (_) {
-        // Coordinates remain useful even if Android's geocoder is unavailable.
+        final label = await _cityGeocoder
+            .cityAndCountry(
+              latitude: position.latitude,
+              longitude: position.longitude,
+            )
+            .timeout(const Duration(seconds: 12));
+        if (!mounted) return;
+        setState(() {
+          // Ritual only needs a broad place label. Do not retain raw coordinates.
+          _latitude = null;
+          _longitude = null;
+          _locationLabel = label;
+          _locationMessage = null;
+        });
+        return;
+      } on CityGeocoderException catch (error) {
+        throw _LocationIssue(
+          '${error.message} Enter your city manually, or try again later.',
+        );
+      } on TimeoutException {
+        throw const _LocationIssue(
+          'Android’s place-name service did not respond. Enter your city '
+          'manually, or try again later.',
+        );
       }
-      if (!mounted) return;
-      setState(() {
-        _latitude = position.latitude;
-        _longitude = position.longitude;
-        _locationLabel = label;
-        if (usedLastKnown) {
-          _locationMessage =
-              'Using Android’s last known location because a '
-              'fresh fix was not available.';
-        } else if (label == null) {
-          _locationMessage =
-              'Location added. Android could not name this place, '
-              'so Ritual saved the coordinates.';
-        }
-      });
     } on _LocationIssue catch (error) {
       if (mounted) setState(() => _locationMessage = error.message);
     } on LocationServiceDisabledException {
@@ -199,7 +188,7 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
           textCapitalization: TextCapitalization.words,
           decoration: const InputDecoration(
             labelText: 'Place name',
-            hintText: 'Home, Columbus, favorite café…',
+            hintText: 'Columbus, United States…',
           ),
           onSubmitted: (value) {
             final trimmed = value.trim();
@@ -468,7 +457,7 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
                     : const Icon(Icons.my_location_outlined),
                 label: Text(
                   _locationLabel == null && _latitude == null
-                      ? 'Use current location'
+                      ? 'Use approximate location'
                       : 'Refresh location',
                 ),
               ),
@@ -505,13 +494,6 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
         ],
       ),
     );
-  }
-
-  String? _firstNonEmpty(List<String?> values) {
-    for (final value in values) {
-      if (value != null && value.trim().isNotEmpty) return value.trim();
-    }
-    return null;
   }
 }
 

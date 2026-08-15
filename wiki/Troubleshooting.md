@@ -4,9 +4,9 @@
 
 Confirm Android **Settings → Apps → Ritual → Notifications** is allowed, then return and toggle reminders again. On Android versions with runtime notification permission, Ritual should show the system prompt the first time. Battery optimization can delay inexact alarms even when permission is allowed. Also verify the Meal reminders notification channel is enabled.
 
-## Location has coordinates but no place name
+## Android cannot name the approximate location
 
-GPS and reverse geocoding are separate Android services. Coordinates can succeed while the platform geocoder fails because the service is unavailable, offline, rate-limited, or cannot resolve that coordinate. Retry with connectivity or enter a place manually. A manual label is valid without coordinates.
+Position lookup and reverse geocoding are separate Android services. Android's geocoder can fail because its backend is unavailable, offline, rate-limited, or has no result for an area. Ritual reports that error instead of saving raw coordinates. Retry with connectivity or enter a city and country manually.
 
 ## App asks for authentication after taking a photo
 

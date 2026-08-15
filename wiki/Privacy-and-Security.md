@@ -14,11 +14,11 @@ Captured files are copied into the app-private documents directory rather than A
 ## Permissions
 
 - **Camera:** requested by the image picker when taking a meal photo.
-- **Location:** requested only when the user asks to add current location.
+- **Approximate location:** requested only when the user asks to add a broad city-and-country label.
 - **Notifications:** requested only when reminders are enabled.
 - **Device authentication:** invoked only when device lock is selected or used to unlock.
 
-Location obtains latitude/longitude first and then uses Android reverse geocoding to derive a human-readable label. If geocoding is unavailable, coordinates may still be saved and the user can enter a place manually. Manual places do not require coordinates.
+Location obtains an approximate position, passes it to Android's system geocoder, and retains only the resulting city-and-country label. Newly obtained raw coordinates are not saved. If Android's geocoder is unavailable, Ritual reports the actual failure and offers manual city entry. Older entries or imported archives may still contain coordinates created by earlier versions.
 
 ## App lock
 

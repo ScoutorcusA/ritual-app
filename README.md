@@ -27,7 +27,7 @@ Contributions are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md), follow
 - Keep captured photos in app-private storage so they do not appear in Android Gallery
 - Add feelings and a written reflection to any entry
 - Optionally record hunger before eating, craving before eating, and fullness afterward on independent 1–5 scales
-- Add the current location with coordinates and a reverse-geocoded place label
+- Add an approximate city-and-country label without retaining raw coordinates
 - Enter or correct a place manually when location lookup is unavailable or a custom label is preferred
 - Edit or delete individual journal entries
 
@@ -102,7 +102,7 @@ Ritual stores its SQLite database and captured photos inside the app’s private
 
 App-private storage is not the same as encrypting every database or image file at rest. Device security, Ritual’s optional app lock, and Android’s application sandbox provide the main protection. Exported files leave that sandbox and are deliberately unencrypted for portability.
 
-Location and notification permissions are requested only when their related features are enabled. Location is optional, and a journal entry can use a manual place without storing coordinates.
+Location and notification permissions are requested only when their related features are enabled. Ritual requests coarse foreground location, converts it to a city-and-country label, and does not retain newly obtained raw coordinates. A place can also be entered manually.
 
 The optional support link opens `ritualapp.nishkamk.com` in the device browser. Ritual sends no journal data or payment information. If the user continues to GitHub Sponsors, GitHub handles the sponsorship under its own terms and privacy statement.
 
