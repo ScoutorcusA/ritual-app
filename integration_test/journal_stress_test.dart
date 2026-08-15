@@ -49,7 +49,14 @@ void main() {
     await repository.deleteAllJournalData();
     await restoreRepository.deleteAllJournalData();
     final photoBytes = _syntheticPhoto();
-    final imports = _syntheticImports(photoBytes);
+    final importPhoto = File(
+      '${Directory.systemTemp.path}/ritual_stress_import_source.jpg',
+    );
+    await importPhoto.writeAsBytes(photoBytes, flush: true);
+    addTearDown(() async {
+      if (await importPhoto.exists()) await importPhoto.delete();
+    });
+    final imports = _syntheticImports(importPhoto.path);
 
     final imported = await _timed('sqlite_import_1000', () {
       return repository.importEntries(imports);
@@ -123,18 +130,25 @@ void main() {
     debugPrint('RITUAL_STRESS csv_bytes=${csv.bytes.length}');
 
     final archive = await _timed('zip_export_1000', () {
-      return JournalArchiveService().createArchive(
+      return JournalArchiveService().createArchiveFile(
         controller.entries,
+        outputPath: '${Directory.systemTemp.path}/ritual_stress_export.zip',
         exportedAt: DateTime.utc(2026, 8, 14),
       );
     });
-    expect(archive.entryCount, _entryCount);
-    expect(archive.bytes, isNotEmpty);
-    debugPrint('RITUAL_STRESS zip_bytes=${archive.bytes.length}');
-
-    final restoredImports = await _timed('zip_verify_1000', () async {
-      return JournalArchiveService().readArchive(archive.bytes);
+    final archiveFile = File(archive.filePath);
+    addTearDown(() async {
+      if (await archiveFile.exists()) await archiveFile.delete();
     });
+    expect(archive.entryCount, _entryCount);
+    expect(await archiveFile.length(), greaterThan(0));
+    debugPrint('RITUAL_STRESS zip_bytes=${await archiveFile.length()}');
+
+    final preview = await _timed('zip_verify_1000', () async {
+      return JournalArchiveService().readArchiveFile(archive.filePath);
+    });
+    addTearDown(preview.dispose);
+    final restoredImports = preview.entries;
     expect(restoredImports, hasLength(_entryCount));
     final restored = await _timed('sqlite_restore_1000', () {
       return restoreRepository.importEntries(restoredImports);
@@ -250,7 +264,7 @@ Uint8List _syntheticPhoto() {
   return Uint8List.fromList(image.encodeJpg(photo, quality: 78));
 }
 
-List<MealImport> _syntheticImports(Uint8List photoBytes) {
+List<MealImport> _syntheticImports(String photoPath) {
   final anchor = DateTime(2026, 8, 14);
   return List.generate(_entryCount, (index) {
     final day = DateTime(anchor.year, anchor.month, anchor.day - (index ~/ 2));
@@ -282,7 +296,7 @@ List<MealImport> _syntheticImports(Uint8List photoBytes) {
         cravingLevel: ((index + 1) % 5) + 1,
         fullnessLevel: ((index + 2) % 5) + 1,
       ),
-      photoBytes: photoBytes,
+      photoPath: photoPath,
       photoExtension: '.jpg',
       fingerprint: 'ritual-stress-${index.toString().padLeft(4, '0')}',
     );

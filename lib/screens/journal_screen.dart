@@ -11,6 +11,7 @@ import '../utils/journal_summary.dart';
 import '../widgets/daily_journal_card.dart';
 import '../widgets/insight_card.dart';
 import 'daily_journal_screen.dart';
+import 'share_card_screen.dart';
 
 class JournalScreen extends StatelessWidget {
   const JournalScreen({
@@ -122,6 +123,21 @@ class _JournalHeader extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
+                ),
+                IconButton(
+                  tooltip: 'Share a reflection',
+                  onPressed: controller.entries.isEmpty
+                      ? null
+                      : () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => ShareCardScreen(
+                              entries: controller.entries,
+                              currentStreak: controller.currentStreak,
+                              streaksEnabled: showStreaks,
+                            ),
+                          ),
+                        ),
+                  icon: const Icon(Icons.ios_share_outlined),
                 ),
                 IconButton(
                   tooltip: 'Settings',

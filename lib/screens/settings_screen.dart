@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import '../controllers/journal_controller.dart';
 import '../controllers/settings_controller.dart';
@@ -10,9 +14,11 @@ import '../models/meal_entry.dart';
 import '../services/journal_archive_service.dart';
 import '../services/journal_csv_service.dart';
 import '../services/journal_pdf_service.dart';
+import '../services/local_file_saver.dart';
 import '../services/meal_reminder_service.dart';
 import '../services/debug_log_service.dart';
 import '../theme/ritual_theme.dart';
+import '../widgets/app_lock_gate.dart';
 import 'privacy_policy_screen.dart';
 import 'support_ritual_screen.dart';
 
@@ -34,6 +40,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final JournalArchiveService _archiveService = JournalArchiveService();
   final JournalCsvService _csvService = JournalCsvService();
   final JournalPdfService _pdfService = JournalPdfService();
+  final LocalFileSaver _fileSaver = const LocalFileSaver();
   bool _working = false;
 
   Future<void> _chooseLockMode(AppLockMode mode) async {
@@ -74,51 +81,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _exportJournal() async {
     if (_working) return;
-    final confirmed = await showDialog<bool>(
+    final protection = await showDialog<_ArchiveProtection>(
       context: context,
-      builder: (context) => AlertDialog(
-        icon: const Icon(Icons.no_encryption_outlined),
-        title: const Text('This ZIP is not encrypted'),
-        content: const Text(
-          'Anyone who can open the exported file can see its photos, notes, '
-          'feelings, dates, and saved places. Store it somewhere private and '
-          'share it only with people you trust.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Export anyway'),
-          ),
-        ],
-      ),
+      builder: (context) => const _ArchiveExportDialog(),
     );
-    if (!mounted || confirmed != true) return;
+    if (!mounted || protection == null) return;
     setState(() => _working = true);
+    File? temporaryArchive;
     try {
-      final result = await _archiveService.createArchive(
+      final directory = await getTemporaryDirectory();
+      final outputPath = p.join(
+        directory.path,
+        'ritual-export-${DateTime.now().microsecondsSinceEpoch}.zip',
+      );
+      final result = await _archiveService.createArchiveFile(
         widget.journal.entries,
+        outputPath: outputPath,
+        password: protection.password,
       );
-      final savedPath = await FilePicker.saveFile(
-        dialogTitle: 'Export Ritual journal',
-        fileName: result.fileName,
-        type: FileType.custom,
-        allowedExtensions: const ['zip'],
-        bytes: result.bytes,
+      temporaryArchive = File(result.filePath);
+      if (!mounted) return;
+      final saved = await AppLockGate.runTrustedInterruption(
+        context,
+        () => _fileSaver.save(
+          sourcePath: result.filePath,
+          fileName: result.fileName,
+          mimeType: 'application/zip',
+        ),
       );
-      if (!mounted || savedPath == null) return;
+      if (!mounted || !saved) return;
       _message(
         '${result.entryCount} ${result.entryCount == 1 ? 'entry' : 'entries'} '
-        'exported successfully.',
+        'exported${result.encrypted ? ' with password protection' : ''}.',
       );
     } on RitualArchiveException catch (error) {
+      if (mounted) _message(error.message, error: true);
+    } on LocalFileSaverException catch (error) {
       if (mounted) _message(error.message, error: true);
     } catch (error) {
       if (mounted) _message('Export failed: $error', error: true);
     } finally {
+      if (temporaryArchive != null) {
+        try {
+          if (await temporaryArchive.exists()) await temporaryArchive.delete();
+        } on FileSystemException {
+          // Android will eventually clear the cached export.
+        }
+      }
       if (mounted) setState(() => _working = false);
     }
   }
@@ -307,48 +316,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (_working) return;
     setState(() => _working = true);
     try {
-      final picked = await FilePicker.pickFile(
-        dialogTitle: 'Import a Ritual journal',
-        type: FileType.custom,
-        allowedExtensions: const ['zip'],
-      );
-      if (picked == null) return;
-      if (picked.size > 1024 * 1024 * 1024) {
-        throw const RitualArchiveException(
-          'This ZIP is too large to import safely.',
-        );
-      }
-      final imports = _archiveService.readArchive(await picked.readAsBytes());
-      if (!mounted) return;
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Import this journal?'),
-          content: Text(
-            'Ritual verified ${imports.length} '
-            '${imports.length == 1 ? 'entry' : 'entries'} and their photos. '
-            'Existing entries will stay, and exact repeat imports are skipped.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Import'),
-            ),
-          ],
+      final picked = await AppLockGate.runTrustedInterruption(
+        context,
+        () => FilePicker.pickFile(
+          dialogTitle: 'Import a Ritual journal',
+          type: FileType.custom,
+          allowedExtensions: const ['zip'],
         ),
       );
-      if (confirmed != true) return;
-      final imported = await widget.journal.importEntries(imports);
-      if (mounted) {
-        _message(
-          imported == 0
-              ? 'Everything in that archive was already in Ritual.'
-              : '$imported ${imported == 1 ? 'entry' : 'entries'} imported.',
+      if (picked == null) return;
+      if (picked.size > 1024 * 1024 * 1024 || picked.path == null) {
+        throw const RitualArchiveException(
+          'This ZIP is unavailable or too large to import safely.',
         );
+      }
+      String? password;
+      if (await _archiveService.isEncryptedArchiveFile(picked.path!)) {
+        if (!mounted) return;
+        password = await showDialog<String>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const _ArchivePasswordDialog(),
+        );
+        if (password == null) return;
+      }
+      final preview = await _archiveService.readArchiveFile(
+        picked.path!,
+        password: password,
+      );
+      try {
+        final imports = preview.entries;
+        if (!mounted) return;
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Import this journal?'),
+            content: Text(
+              'Ritual verified ${imports.length} '
+              '${imports.length == 1 ? 'entry' : 'entries'} and their photos. '
+              'Existing entries will stay, and exact repeat imports are skipped.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Import'),
+              ),
+            ],
+          ),
+        );
+        if (confirmed != true) return;
+        final imported = await widget.journal.importEntries(imports);
+        if (mounted) {
+          _message(
+            imported == 0
+                ? 'Everything in that archive was already in Ritual.'
+                : '$imported ${imported == 1 ? 'entry' : 'entries'} imported.',
+          );
+        }
+      } finally {
+        await preview.dispose();
       }
     } on RitualArchiveException catch (error) {
       if (mounted) _message(error.message, error: true);
@@ -592,7 +622,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: const Text('Export journal'),
                     subtitle: Text(
                       '${widget.journal.entries.length} entries, metadata, and '
-                      'photos in one unencrypted ZIP',
+                      'photos in a password-protected or standard ZIP',
                     ),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: _exportJournal,
@@ -702,7 +732,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 28),
             Text(
-              'Ritual 1.5 • ${DateFormat.yMMMM().format(DateTime.now())}',
+              'Ritual 1.6 • ${DateFormat.yMMMM().format(DateTime.now())}',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall,
             ),
@@ -974,6 +1004,187 @@ class _ReportExportDialogState extends State<_ReportExportDialog> {
       ],
     );
   }
+}
+
+enum _ArchiveProtectionMode { encrypted, standard }
+
+class _ArchiveProtection {
+  const _ArchiveProtection({this.password});
+
+  final String? password;
+}
+
+class _ArchiveExportDialog extends StatefulWidget {
+  const _ArchiveExportDialog();
+
+  @override
+  State<_ArchiveExportDialog> createState() => _ArchiveExportDialogState();
+}
+
+class _ArchiveExportDialogState extends State<_ArchiveExportDialog> {
+  final _passwordController = TextEditingController();
+  final _confirmationController = TextEditingController();
+  _ArchiveProtectionMode _mode = _ArchiveProtectionMode.encrypted;
+  String? _error;
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    _confirmationController.dispose();
+    super.dispose();
+  }
+
+  void _continue() {
+    if (_mode == _ArchiveProtectionMode.standard) {
+      Navigator.pop(context, const _ArchiveProtection());
+      return;
+    }
+    final password = _passwordController.text;
+    if (password.length < JournalArchiveService.minimumPasswordLength) {
+      setState(
+        () => _error =
+            'Use at least ${JournalArchiveService.minimumPasswordLength} characters.',
+      );
+      return;
+    }
+    if (password != _confirmationController.text) {
+      setState(() => _error = 'The passwords do not match.');
+      return;
+    }
+    Navigator.pop(context, _ArchiveProtection(password: password));
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    icon: Icon(
+      _mode == _ArchiveProtectionMode.encrypted
+          ? Icons.enhanced_encryption_outlined
+          : Icons.no_encryption_outlined,
+    ),
+    title: const Text('Protect this backup'),
+    content: SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          RadioGroup<_ArchiveProtectionMode>(
+            groupValue: _mode,
+            onChanged: (value) {
+              if (value != null) setState(() => _mode = value);
+            },
+            child: const Column(
+              children: [
+                RadioListTile<_ArchiveProtectionMode>(
+                  contentPadding: EdgeInsets.zero,
+                  value: _ArchiveProtectionMode.encrypted,
+                  title: Text('Password-protected ZIP'),
+                  subtitle: Text('Recommended - AES-256 encryption'),
+                ),
+                RadioListTile<_ArchiveProtectionMode>(
+                  contentPadding: EdgeInsets.zero,
+                  value: _ArchiveProtectionMode.standard,
+                  title: Text('Standard ZIP'),
+                  subtitle: Text('Compatible but readable by anyone'),
+                ),
+              ],
+            ),
+          ),
+          if (_mode == _ArchiveProtectionMode.encrypted) ...[
+            const SizedBox(height: 8),
+            TextField(
+              controller: _passwordController,
+              obscureText: true,
+              autocorrect: false,
+              enableSuggestions: false,
+              decoration: const InputDecoration(
+                labelText: 'Export password',
+                helperText: 'At least 12 characters',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _confirmationController,
+              obscureText: true,
+              autocorrect: false,
+              enableSuggestions: false,
+              onSubmitted: (_) => _continue(),
+              decoration: const InputDecoration(labelText: 'Confirm password'),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Ritual cannot recover this password. You will need it to import the ZIP.',
+            ),
+          ] else ...[
+            const SizedBox(height: 8),
+            Text(
+              'Anyone who opens this ZIP can see its photos, notes, feelings, dates, and saved places.',
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ],
+          if (_error != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              _error!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ],
+        ],
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Cancel'),
+      ),
+      FilledButton(onPressed: _continue, child: const Text('Create ZIP')),
+    ],
+  );
+}
+
+class _ArchivePasswordDialog extends StatefulWidget {
+  const _ArchivePasswordDialog();
+
+  @override
+  State<_ArchivePasswordDialog> createState() => _ArchivePasswordDialogState();
+}
+
+class _ArchivePasswordDialogState extends State<_ArchivePasswordDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _continue() {
+    if (_controller.text.isNotEmpty) Navigator.pop(context, _controller.text);
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    icon: const Icon(Icons.lock_outline_rounded),
+    title: const Text('Encrypted Ritual ZIP'),
+    content: TextField(
+      controller: _controller,
+      autofocus: true,
+      obscureText: true,
+      autocorrect: false,
+      enableSuggestions: false,
+      onSubmitted: (_) => _continue(),
+      decoration: const InputDecoration(
+        labelText: 'Export password',
+        helperText: 'Use the password chosen when this ZIP was exported.',
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Cancel'),
+      ),
+      FilledButton(onPressed: _continue, child: const Text('Unlock')),
+    ],
+  );
 }
 
 class _PinSetupDialog extends StatefulWidget {

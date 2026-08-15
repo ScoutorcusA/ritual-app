@@ -75,8 +75,19 @@ Contributions are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md), follow
 - Choose **Last 7 days**, **Last 30 days**, or an inclusive custom date range for PDF and CSV reports
 - See how many entries each range contains before exporting
 - Safely encode commas, quotes, multiline reflections, and spreadsheet-like formulas in CSV output
+- Choose a recommended AES-256 password-protected ZIP or a standard unencrypted ZIP for full backups
+- Stream backup archives through temporary files so the complete journal and all photos are not held in memory together
+- Run ZIP encryption, decryption, and validation in a background worker so large backups do not block the app interface
 
-PDF, CSV, and ZIP exports are **not encrypted**. Ritual warns about this before export; exported files should be stored and shared carefully.
+PDF and CSV reports remain unencrypted for compatibility. Full journal ZIPs can be password-protected; Ritual cannot recover a forgotten export password. Standard ZIPs remain available with a clear warning.
+
+### Share a reflection
+
+- Select one to four recent meal photos for a local share card
+- Optionally include the current streak when streaks are enabled
+- Exclude notes, feelings, dates, and places from the card
+- Add a small **Made with Ritual** watermark and use Android's normal share sheet
+- Delete the temporary share image after the share flow finishes
 
 ### Support continued development
 
@@ -100,7 +111,7 @@ PDF, CSV, and ZIP exports are **not encrypted**. Ritual warns about this before 
 
 Ritual stores its SQLite database and captured photos inside the app’s private storage. Other gallery apps do not receive those photos, and Ritual does not upload journal data to a server.
 
-App-private storage is not the same as encrypting every database or image file at rest. Device security, Ritual’s optional app lock, and Android’s application sandbox provide the main protection. Exported files leave that sandbox and are deliberately unencrypted for portability.
+App-private storage is not the same as encrypting every database or image file individually at rest. Device security, Ritual’s optional app lock, and Android’s application sandbox provide the main protection. Exports leave that sandbox: ZIP backups can use password protection, while standard ZIP, PDF, and CSV files are unencrypted for portability.
 
 Location and notification permissions are requested only when their related features are enabled. Ritual requests coarse foreground location, converts it to a city-and-country label, and does not retain newly obtained raw coordinates. A place can also be entered manually.
 

@@ -52,12 +52,12 @@ class JournalPdfService {
       title: 'Ritual food journal report',
       author: 'Ritual',
       subject: 'Self-recorded meal reflection journal',
-      creator: 'Ritual 1.5',
+      creator: 'Ritual 1.6',
     );
     document.addPage(
       pdf.MultiPage(
         pageFormat: PdfPageFormat.letter,
-        margin: const pdf.EdgeInsets.fromLTRB(42, 48, 42, 48),
+        margin: const pdf.EdgeInsets.fromLTRB(34, 38, 34, 38),
         theme: pdf.ThemeData.withFont(
           base: pdf.Font.helvetica(),
           bold: pdf.Font.helveticaBold(),
@@ -66,7 +66,7 @@ class JournalPdfService {
         header: (context) => context.pageNumber == 1
             ? pdf.SizedBox.shrink()
             : pdf.Container(
-                padding: const pdf.EdgeInsets.only(bottom: 8),
+                padding: const pdf.EdgeInsets.only(bottom: 5),
                 decoration: const pdf.BoxDecoration(
                   border: pdf.Border(bottom: pdf.BorderSide(color: _line)),
                 ),
@@ -116,28 +116,31 @@ class JournalPdfService {
               letterSpacing: 3,
             ),
           ),
-          pdf.SizedBox(height: 8),
+          pdf.SizedBox(height: 5),
           pdf.Text(
             'Food journal report',
             style: pdf.TextStyle(
               color: _ink,
-              fontSize: 30,
+              fontSize: 25,
               fontWeight: pdf.FontWeight.bold,
             ),
           ),
-          pdf.SizedBox(height: 8),
+          pdf.SizedBox(height: 5),
           pdf.Text(
             'Prepared ${DateFormat.yMMMMd().add_jm().format(created)}',
             style: const pdf.TextStyle(color: _sage, fontSize: 11),
           ),
-          pdf.SizedBox(height: 4),
+          pdf.SizedBox(height: 2),
           pdf.Text(
             'Journal period ${_pdfSafe(effectiveRange.displayLabel)}',
             style: const pdf.TextStyle(color: _sage, fontSize: 11),
           ),
-          pdf.SizedBox(height: 22),
+          pdf.SizedBox(height: 12),
           pdf.Container(
-            padding: const pdf.EdgeInsets.all(16),
+            padding: const pdf.EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 9,
+            ),
             decoration: pdf.BoxDecoration(
               color: _paper,
               borderRadius: pdf.BorderRadius.circular(10),
@@ -157,20 +160,33 @@ class JournalPdfService {
               ],
             ),
           ),
-          pdf.SizedBox(height: 14),
-          pdf.Text(
-            'About this report',
-            style: pdf.TextStyle(fontSize: 13, fontWeight: pdf.FontWeight.bold),
+          pdf.SizedBox(height: 8),
+          pdf.Container(
+            padding: const pdf.EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 7,
+            ),
+            decoration: pdf.BoxDecoration(
+              border: pdf.Border.all(color: _line),
+              borderRadius: pdf.BorderRadius.circular(7),
+            ),
+            child: pdf.RichText(
+              text: pdf.TextSpan(
+                style: const pdf.TextStyle(fontSize: 8.5, color: _ink),
+                children: [
+                  pdf.TextSpan(
+                    text: 'About this report: ',
+                    style: pdf.TextStyle(fontWeight: pdf.FontWeight.bold),
+                  ),
+                  const pdf.TextSpan(
+                    text:
+                        'Information is self-recorded. Ratings use an optional 1-to-5 reflection scale. Common feeling is the most frequently selected feeling in this period.',
+                  ),
+                ],
+              ),
+            ),
           ),
-          pdf.SizedBox(height: 5),
-          pdf.Text(
-            'This report contains information recorded by the journal owner. '
-            'Ratings use a 1-to-5 reflection scale and may be blank. Common '
-            'feeling is the feeling selected on the greatest number of entries '
-            'in this report period.',
-            style: const pdf.TextStyle(fontSize: 10, lineSpacing: 2),
-          ),
-          pdf.SizedBox(height: 22),
+          pdf.SizedBox(height: 12),
           if (days.isEmpty)
             pdf.Container(
               padding: const pdf.EdgeInsets.all(20),
@@ -216,22 +232,22 @@ class JournalPdfService {
           value,
           style: pdf.TextStyle(
             color: _ink,
-            fontSize: 17,
+            fontSize: 14,
             fontWeight: pdf.FontWeight.bold,
           ),
         ),
-        pdf.SizedBox(height: 3),
+        pdf.SizedBox(height: 1),
         pdf.Text(
           label,
           textAlign: pdf.TextAlign.center,
-          style: const pdf.TextStyle(color: _sage, fontSize: 8),
+          style: const pdf.TextStyle(color: _sage, fontSize: 7.5),
         ),
       ],
     ),
   );
 
   pdf.Widget _dayHeading(DateTime day, int count) => pdf.Container(
-    padding: const pdf.EdgeInsets.fromLTRB(12, 9, 12, 9),
+    padding: const pdf.EdgeInsets.fromLTRB(10, 6, 10, 6),
     decoration: const pdf.BoxDecoration(
       color: _ink,
       borderRadius: pdf.BorderRadius.all(pdf.Radius.circular(7)),
@@ -243,13 +259,13 @@ class JournalPdfService {
           DateFormat('EEEE, MMMM d, yyyy').format(day),
           style: pdf.TextStyle(
             color: PdfColors.white,
-            fontSize: 12,
+            fontSize: 10.5,
             fontWeight: pdf.FontWeight.bold,
           ),
         ),
         pdf.Text(
           '$count ${count == 1 ? 'entry' : 'entries'}',
-          style: const pdf.TextStyle(color: _paper, fontSize: 9),
+          style: const pdf.TextStyle(color: _paper, fontSize: 8),
         ),
       ],
     ),
@@ -262,18 +278,18 @@ class JournalPdfService {
           crossAxisAlignment: pdf.CrossAxisAlignment.start,
           children: [
             _dayHeading(day, meals.length),
-            pdf.SizedBox(height: 10),
+            pdf.SizedBox(height: 5),
             _mealCard(meals.first),
           ],
         ),
       ),
-      pdf.SizedBox(height: 10),
+      pdf.SizedBox(height: 5),
     ];
     for (final meal in meals.skip(1)) {
       widgets.add(_mealCard(meal));
-      widgets.add(pdf.SizedBox(height: 10));
+      widgets.add(pdf.SizedBox(height: 5));
     }
-    widgets.add(pdf.SizedBox(height: 8));
+    widgets.add(pdf.SizedBox(height: 5));
     return widgets;
   }
 
@@ -285,11 +301,14 @@ class JournalPdfService {
         children: [
           pdf.Text(
             entry.mealType.label,
-            style: pdf.TextStyle(fontSize: 14, fontWeight: pdf.FontWeight.bold),
+            style: pdf.TextStyle(
+              fontSize: 11.5,
+              fontWeight: pdf.FontWeight.bold,
+            ),
           ),
           pdf.Text(
             DateFormat.jm().format(entry.createdAt),
-            style: const pdf.TextStyle(color: _sage, fontSize: 10),
+            style: const pdf.TextStyle(color: _sage, fontSize: 8.5),
           ),
         ],
       ),
@@ -302,12 +321,12 @@ class JournalPdfService {
     ];
     if (ratings.isNotEmpty) {
       details.addAll([
-        pdf.SizedBox(height: 7),
+        pdf.SizedBox(height: 4),
         pdf.Text(
           ratings.join('  |  '),
           style: pdf.TextStyle(
             color: _sage,
-            fontSize: 9,
+            fontSize: 8,
             fontWeight: pdf.FontWeight.bold,
           ),
         ),
@@ -315,13 +334,13 @@ class JournalPdfService {
     }
     if (entry.feelings.isNotEmpty) {
       details.addAll([
-        pdf.SizedBox(height: 7),
+        pdf.SizedBox(height: 4),
         _labeledText('Feelings', entry.feelings.join(', ')),
       ]);
     }
     if (entry.note.trim().isNotEmpty) {
       details.addAll([
-        pdf.SizedBox(height: 6),
+        pdf.SizedBox(height: 4),
         _labeledText('Reflection', entry.note.trim()),
       ]);
     }
@@ -331,11 +350,11 @@ class JournalPdfService {
             ? '${entry.latitude!.toStringAsFixed(4)}, ${entry.longitude!.toStringAsFixed(4)}'
             : null);
     if (place != null) {
-      details.addAll([pdf.SizedBox(height: 6), _labeledText('Place', place)]);
+      details.addAll([pdf.SizedBox(height: 4), _labeledText('Place', place)]);
     }
 
     return pdf.Container(
-      padding: const pdf.EdgeInsets.all(10),
+      padding: const pdf.EdgeInsets.all(7),
       decoration: pdf.BoxDecoration(
         border: pdf.Border.all(color: _line),
         borderRadius: pdf.BorderRadius.circular(9),
@@ -344,8 +363,8 @@ class JournalPdfService {
         crossAxisAlignment: pdf.CrossAxisAlignment.start,
         children: [
           pdf.Container(
-            width: 112,
-            height: 84,
+            width: 82,
+            height: 61,
             decoration: pdf.BoxDecoration(
               color: _paper,
               borderRadius: pdf.BorderRadius.circular(7),
@@ -354,7 +373,7 @@ class JournalPdfService {
                 ? pdf.Center(
                     child: pdf.Text(
                       'Photo unavailable',
-                      style: const pdf.TextStyle(color: _sage, fontSize: 8),
+                      style: const pdf.TextStyle(color: _sage, fontSize: 7),
                     ),
                   )
                 : pdf.ClipRRect(
@@ -363,7 +382,7 @@ class JournalPdfService {
                     child: pdf.Image(meal.photo!, fit: pdf.BoxFit.cover),
                   ),
           ),
-          pdf.SizedBox(width: 13),
+          pdf.SizedBox(width: 9),
           pdf.Expanded(
             child: pdf.Column(
               crossAxisAlignment: pdf.CrossAxisAlignment.start,
@@ -377,7 +396,7 @@ class JournalPdfService {
 
   pdf.Widget _labeledText(String label, String value) => pdf.RichText(
     text: pdf.TextSpan(
-      style: const pdf.TextStyle(fontSize: 9.5, color: _ink),
+      style: const pdf.TextStyle(fontSize: 8.2, color: _ink),
       children: [
         pdf.TextSpan(
           text: '$label: ',

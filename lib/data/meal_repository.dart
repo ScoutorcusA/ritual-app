@@ -279,7 +279,7 @@ class SqliteMealRepository implements MealRepository {
           '${source.photoExtension}',
         );
         final file = File(path);
-        await file.writeAsBytes(source.photoBytes, flush: true);
+        await File(source.photoPath).copy(path);
         createdFiles.add(file);
         prepared.add((source: source, path: path));
       }

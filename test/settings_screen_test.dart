@@ -77,7 +77,12 @@ void main() {
     expect(find.text('Export report'), findsOneWidget);
     await tester.tap(find.text('Export journal'));
     await tester.pumpAndSettle();
-    expect(find.text('This ZIP is not encrypted'), findsOneWidget);
+    expect(find.text('Protect this backup'), findsOneWidget);
+    expect(find.text('Password-protected ZIP'), findsOneWidget);
+    expect(find.textContaining('Ritual cannot recover'), findsOneWidget);
+    await tester.tap(find.text('Standard ZIP'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Anyone who opens this ZIP'), findsOneWidget);
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
 

@@ -40,7 +40,9 @@ When a user requests a place name, Ritual obtains only approximate foreground lo
 
 ## Exports and sharing
 
-Ritual creates ZIP, PDF, or CSV files only after a user explicitly requests an export and chooses where to save it. ZIP and PDF exports may contain sensitive journal information; CSV contains journal details but no photos or internal image paths. Exports are not encrypted. After export, the selected storage provider, receiving application, recipient, and user control the file. Users should store and share exports carefully.
+Ritual creates ZIP, PDF, or CSV files only after a user explicitly requests an export and chooses where to save it. ZIP backups may use user-chosen AES-256 password protection or may be exported as a standard unencrypted ZIP. Ritual does not retain or recover export passwords. PDF reports contain selected photos and journal details; CSV contains journal details but no photos or internal image paths. PDF, CSV, and standard ZIP exports are unencrypted. After export, the selected storage provider, receiving application, recipient, and user control the file.
+
+The optional **Share a reflection** flow creates a temporary image containing only the one to four photos selected by the user, an optional streak, and Ritual branding. Notes, feelings, exact dates, and locations are excluded. Ritual passes the temporary image to Android's user-selected sharing application and then deletes its cached copy. The receiving application controls the shared copy under its own terms.
 
 Ritual does not automatically share data with healthcare professionals. A user may independently choose to share an exported report with a dietitian, doctor, or another recipient.
 
@@ -58,7 +60,7 @@ Because Ritual has no user accounts or server-side journal database, there is no
 
 ## Security
 
-Ritual relies on Android's application sandbox and offers optional device authentication or a separate Ritual PIN. Android backup is disabled. These safeguards reduce unauthorized access but no device or storage system can be guaranteed completely secure. Ritual's local database and photographs are not individually encrypted by the app, and exported files are unencrypted.
+Ritual relies on Android's application sandbox and offers optional device authentication or a separate Ritual PIN. Android backup is disabled. These safeguards reduce unauthorized access but no device or storage system can be guaranteed completely secure. Ritual's local database and photographs are not individually encrypted by the app. Password-protected ZIP backups are encrypted; PDF, CSV, and standard ZIP exports are not.
 
 ## Health information and disclaimer
 

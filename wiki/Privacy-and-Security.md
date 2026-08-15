@@ -31,6 +31,6 @@ The app locks after remaining backgrounded for five seconds. Camera capture is e
 
 ## Important limitations
 
-App-private storage is sandboxed but journal photos and the SQLite database are not individually encrypted by Ritual. A compromised/rooted device may bypass normal Android protections. Screenshots and external exports require separate care. ZIP, PDF, and CSV exports are intentionally unencrypted for portability and display a warning before export.
+App-private storage is sandboxed but journal photos and the SQLite database are not individually encrypted by Ritual. A compromised/rooted device may bypass normal Android protections. Screenshots and external exports require separate care. ZIP backups offer optional AES-256 password protection; PDF, CSV, and standard ZIP exports remain unencrypted for portability and display an appropriate warning.
 
 Ritual is a reflective journal, not a medical device. Insights are static pattern descriptions, not diagnoses or treatment advice.

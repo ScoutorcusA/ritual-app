@@ -41,12 +41,16 @@ The lock waits five seconds after the app is backgrounded. Brief notification-sh
 
 ## Your data
 
-- **Export journal:** full unencrypted ZIP with metadata and original photo bytes.
+- **Export journal:** full ZIP with metadata and original photo bytes; choose recommended AES-256 password protection or a warned standard ZIP.
 - **Export report:** PDF with photos or CSV without photos; choose 7 days, 30 days, or a custom inclusive range and preview its entry count.
 - **Import Ritual ZIP:** validates the archive before making database changes and skips duplicates.
 - **Delete all journal data:** destructive, confirmed removal of entries, photos, highlights, and streak history.
 
 Settings such as theme, reminder times, reflection choices, and onboarding completion use Android preferences. The Ritual PIN hash and salt use secure storage. Journal content uses the local SQLite database and private files.
+
+## Share a reflection
+
+The Journal share button opens a local card composer. The user selects one to four of the twelve most recent moments and can include the current streak when streaks are enabled. The rendered card contains only those photos, an optional streak, the current month, and a **Made with Ritual** watermark. It deliberately omits meal metadata, feelings, notes, exact dates, and places. Android's share sheet receives a temporary PNG, which Ritual deletes after the share flow.
 
 ## About Ritual
 

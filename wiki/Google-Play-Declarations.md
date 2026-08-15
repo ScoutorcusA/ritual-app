@@ -1,6 +1,6 @@
 # Google Play Declarations
 
-**Prepared for Ritual 1.5.2+9 on August 15, 2026.** Re-audit these answers whenever code, SDKs, permissions, monetization, or network behavior changes.
+**Prepared for Ritual 1.6.0+11 on August 15, 2026.** Re-audit these answers whenever code, SDKs, permissions, monetization, sharing behavior, or network behavior changes.
 
 ## Privacy policy URL
 
@@ -22,7 +22,7 @@ Why: the production app has no account, backend, analytics, ads, crash reporting
 
 Do **not** select Photos and videos, Health and fitness info, Other user-generated content, Approximate location, or Precise location in the Data Safety data-types screen for the audited build. Those types are accessed locally, but they are not transmitted by Ritual. Android permission disclosure is separate from Data Safety.
 
-User-directed ZIP/PDF/CSV export is not automatic collection by Ritual. The user chooses the destination and recipient. The privacy policy must continue to warn that exports are unencrypted.
+User-directed ZIP/PDF/CSV export and share-card use are not automatic collection by Ritual. The user chooses the destination or receiving application. The privacy policy must distinguish password-protected ZIP backups from unencrypted standard ZIP, PDF, CSV, and intentionally shared card images.
 
 ### Security-practices questions
 

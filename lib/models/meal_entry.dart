@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 enum MealType { breakfast, lunch, dinner, snack }
 
 extension MealTypeLabel on MealType {
@@ -131,13 +129,13 @@ class MealDraft {
 class MealImport {
   const MealImport({
     required this.draft,
-    required this.photoBytes,
+    required this.photoPath,
     required this.photoExtension,
     required this.fingerprint,
   });
 
   final MealDraft draft;
-  final Uint8List photoBytes;
+  final String photoPath;
   final String photoExtension;
   final String fingerprint;
 }

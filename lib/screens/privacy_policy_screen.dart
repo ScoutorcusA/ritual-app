@@ -56,7 +56,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
         _PolicySection(
           title: 'Exports',
           body:
-              'ZIP, PDF, and CSV exports are created only when you request them and choose where to save them. They are not encrypted. After export, you and the receiving storage provider or recipient control the file.',
+              'ZIP, PDF, and CSV exports are created only when you request them and choose where to save them. ZIP backups can use a password with AES-256 encryption; Ritual cannot recover that password. Standard ZIP, PDF, and CSV exports are not encrypted. Share cards contain only selected photos, an optional streak, and Ritual branding; they omit notes, feelings, exact dates, and places. After export or sharing, you and the receiving application, storage provider, or recipient control the file.',
         ),
         _PolicySection(
           title: 'Optional support',
