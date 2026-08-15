@@ -4,7 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../theme/ritual_theme.dart';
 
 const ritualPrivacyPolicyUrl =
-    'https://github.com/ScoutorcusA/ritual-app/wiki/Privacy-Policy';
+    'https://ritualapp.nishkamk.com/privacy/';
 
 class PrivacyPolicyScreen extends StatelessWidget {
   const PrivacyPolicyScreen({super.key});

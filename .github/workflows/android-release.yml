@@ -82,18 +82,60 @@ jobs:
 
       - name: Prepare downloadable files
         run: |
+          VERSIONED_APK="ritual-${APP_VERSION}-build-${BUILD_NUMBER}.apk"
+          VERSIONED_CHECKSUM="${VERSIONED_APK}.sha256"
+          RELEASE_TAG="ritual-${APP_VERSION}-build-${BUILD_NUMBER}"
+          cp build/app/outputs/flutter-apk/app-release.apk "$VERSIONED_APK"
+          sha256sum "$VERSIONED_APK" > "$VERSIONED_CHECKSUM"
           cp build/app/outputs/flutter-apk/app-release.apk ritual-latest.apk
           sha256sum ritual-latest.apk > ritual-latest.apk.sha256
+          echo "VERSIONED_APK=$VERSIONED_APK" >> "$GITHUB_ENV"
+          echo "VERSIONED_CHECKSUM=$VERSIONED_CHECKSUM" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: ritual-apk-${{ env.APP_VERSION }}-${{ env.BUILD_NUMBER }}-${{ env.SHORT_SHA }}
           path: |
-            ritual-latest.apk
-            ritual-latest.apk.sha256
+            ${{ env.VERSIONED_APK }}
+            ${{ env.VERSIONED_CHECKSUM }}
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 90
+
+      - name: Publish permanent versioned release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          printf '%s\n' \
+            "Permanent Ritual Android build." \
+            "" \
+            "- App version: ${APP_VERSION}" \
+            "- Android build number: ${BUILD_NUMBER}" \
+            "- Commit: ${GITHUB_SHA}" \
+            "- Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            "" \
+            "Download ${VERSIONED_APK} and open it on your Android phone." \
+            > versioned-release-notes.md
+
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" \
+              "$VERSIONED_APK" \
+              "$VERSIONED_CHECKSUM" \
+              --clobber
+            gh release edit "$RELEASE_TAG" \
+              --title "Ritual ${APP_VERSION} (build ${BUILD_NUMBER})" \
+              --notes-file versioned-release-notes.md \
+              --prerelease
+          else
+            gh release create "$RELEASE_TAG" \
+              "$VERSIONED_APK" \
+              "$VERSIONED_CHECKSUM" \
+              --target "$GITHUB_SHA" \
+              --title "Ritual ${APP_VERSION} (build ${BUILD_NUMBER})" \
+              --notes-file versioned-release-notes.md \
+              --prerelease
+          fi
 
       - name: Update rolling GitHub release
         env:

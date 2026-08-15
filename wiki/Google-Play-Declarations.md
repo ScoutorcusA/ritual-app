@@ -6,9 +6,9 @@
 
 Use this in **Play Console → Policy → App content → Privacy policy** and in the store listing where requested:
 
-`https://github.com/ScoutorcusA/ritual-app/wiki/Privacy-Policy`
+`https://ritualapp.nishkamk.com/privacy/`
 
-The repository/wiki must be public so this URL is active, publicly accessible, non-geofenced, and readable without a GitHub login. Keep public wiki editing restricted to collaborators so the policy is not publicly editable. Do not submit while the URL returns 404 or requires repository access.
+The website must be deployed so this URL is active, publicly accessible, non-geofenced, and readable without a login. Do not submit while the URL returns 404 or before HTTPS is working.
 
 ## Data Safety form
 

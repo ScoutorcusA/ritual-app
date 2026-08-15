@@ -137,10 +137,17 @@ The [Android release workflow](.github/workflows/android-release.yml) runs after
 2. Runs static analysis and the complete test suite
 3. Builds an APK with a monotonically increasing Android build number
 4. Signs it with the same private key on every run
-5. Uploads a 30-day workflow artifact
-6. Updates the rolling **Ritual Latest** prerelease and its SHA-256 checksum
+5. Uploads a 90-day workflow artifact
+6. Creates a permanent, versioned prerelease with its APK and SHA-256 checksum
+7. Updates the rolling **Ritual Latest** prerelease and its SHA-256 checksum
 
 After the workflow succeeds, download `ritual-latest.apk` from the [Ritual Latest release](https://github.com/ScoutorcusA/ritual-app/releases/tag/ritual-latest). Failed analysis, tests, signing validation, or compilation will prevent a new APK from being published.
+
+The rolling release always points to the newest build, while the [complete Releases page](https://github.com/ScoutorcusA/ritual-app/releases) keeps each versioned build available. This makes the default download simple without replacing the older published APKs.
+
+## Website
+
+The static Ritual website lives in [`web/`](web/) and is prepared for `ritualapp.nishkamk.com`. It includes the landing page, public privacy policy, direct latest-APK link, custom-domain files, and a manual GitHub Pages deployment workflow. See [`web/README.md`](web/README.md) for the hosting steps.
 
 ### One-time signing setup
 

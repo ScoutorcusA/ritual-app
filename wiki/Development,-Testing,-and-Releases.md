@@ -19,7 +19,9 @@ Sample PDF/CSV files use synthetic entries. Sample PDF color blocks are generate
 
 ## GitHub Actions APK release
 
-Every push to `main` runs `.github/workflows/android-release.yml`. The workflow installs pinned Flutter and Java versions, resolves dependencies, runs analysis and all tests, validates signing secrets, builds a monotonically versioned signed APK, uploads a 30-day workflow artifact, and updates the rolling `ritual-latest` prerelease with APK and SHA-256 checksum.
+Every push to `main` runs `.github/workflows/android-release.yml`. The workflow installs pinned Flutter and Java versions, resolves dependencies, runs analysis and all tests, validates signing secrets, builds a monotonically versioned signed APK, uploads a 90-day workflow artifact, creates a permanent versioned prerelease, and updates the rolling `ritual-latest` prerelease with APK and SHA-256 checksum.
+
+The `ritual-latest` asset is intentionally replaced so one stable URL always downloads the newest APK. Older builds remain attached to their unique versioned GitHub releases instead of disappearing.
 
 Required repository secrets:
 

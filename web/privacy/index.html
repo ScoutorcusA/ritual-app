@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#dfe5d8" />
+    <meta name="description" content="How the Ritual Android app accesses, stores, and protects journal information." />
+    <link rel="canonical" href="https://ritualapp.nishkamk.com/privacy/" />
+    <link rel="icon" href="../assets/ritual-logo.png" />
+    <link rel="stylesheet" href="../styles.css" />
+    <title>Privacy Policy — Ritual</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="../"><img src="../assets/ritual-logo.png" alt="" width="42" height="42" /><span>Ritual</span></a>
+      <nav aria-label="Main navigation"><a href="../#why-ritual">Why Ritual</a><a href="./" aria-current="page">Privacy</a><a href="../#questions">Questions</a></nav>
+      <a class="header-download" href="https://github.com/ScoutorcusA/ritual-app/releases/download/ritual-latest/ritual-latest.apk">Download APK</a>
+    </header>
+    <main class="legal-main">
+      <section class="legal-hero">
+        <p class="eyebrow">Effective August 14, 2026</p>
+        <h1>Privacy is part of<br />the <em>ritual.</em></h1>
+        <p>This policy explains how the Ritual Android application accesses and handles information.</p>
+      </section>
+      <article class="legal-content">
+        <div class="legal-summary">Ritual is designed to keep journal data on your device. It does not require an account, sell personal information, show advertising, or operate a server that receives journal entries.</div>
+        <section><h2>Information handled by the app</h2><p>Depending on the features you choose, Ritual may access or store meal photographs; meal type, feelings, notes, date, and time; optional hunger, craving, and fullness ratings; optional coordinates and a place label; app preferences, reminder times, streak progress, and calendar highlights; and optional Ritual PIN material or the result of Android device authentication.</p><p>This information is used only to provide the journal, Browse views, local insights, reminders, streaks, security, and exports you request.</p></section>
+        <section><h2>Local storage and transmission</h2><p>Journal records are stored in a SQLite database inside Ritual’s Android application sandbox. Captured photographs are copied into app-private storage and are not added to Android’s shared photo gallery. Preferences remain on the device, and Ritual PIN material is stored through Android-backed secure storage.</p><p>Ritual does not transmit journal entries, photographs, ratings, notes, coordinates, identifiers, diagnostics, or usage activity to Ritual or to advertising or analytics companies. The release application does not request general internet access.</p><p>When you request a place name, Ritual calls Android’s system geocoding service. The device or its configured geocoding provider may process coordinates to return a place description. You can avoid geocoding by entering a place manually or omitting location.</p></section>
+        <section><h2>Permissions</h2><ul><li><strong>Location:</strong> requested only after you select Use current location while editing an entry; it is not accessed in the background.</li><li><strong>Notifications:</strong> requested only if you enable locally scheduled meal reminders.</li><li><strong>Camera:</strong> used when you choose to photograph a meal through Android’s camera flow.</li><li><strong>Device authentication:</strong> used only when you enable the recommended device-security app lock. Android does not provide Ritual with fingerprint templates or credentials.</li></ul></section>
+        <section><h2>Exports and sharing</h2><p>Ritual creates ZIP, PDF, or CSV files only after you explicitly request an export and choose where to save it. Exports are not encrypted. After export, you and the selected storage provider, receiving application, or recipient control the file. Store and share exports carefully.</p><p>Ritual does not automatically share data with healthcare professionals.</p></section>
+        <section><h2>Retention and deletion</h2><p>Information remains on the device until you delete an entry, select Settings → Delete all journal data, clear the app’s storage through Android, or uninstall Ritual. Delete-all removes journal entries, private meal photos, calendar highlights, and streak history while retaining general app preferences. Previously exported or shared files must be deleted separately.</p></section>
+        <section><h2>Security</h2><p>Ritual relies on Android’s application sandbox, disables Android backup, and offers optional device authentication or a separate Ritual PIN. These safeguards reduce unauthorized access, but no device or storage system can be guaranteed completely secure. The local database, photographs, and exported files are not individually encrypted by Ritual.</p></section>
+        <section><h2>Health information and disclaimer</h2><p>Meal records and hunger, craving, fullness, or feeling entries may be considered sensitive health-related information. Ritual is a personal reflection tool, not a medical device. It does not diagnose, treat, cure, or prevent any disease or medical condition. Its summaries and insights are not medical advice. Consult a qualified healthcare professional for medical advice, diagnosis, or treatment.</p></section>
+        <section><h2>Children</h2><p>Ritual is not specifically directed to children under 13, and it does not knowingly collect children’s personal information on a server. A parent or guardian should supervise a child’s use of any health-related journaling application and any sharing of exports.</p></section>
+        <section><h2>Changes to this policy</h2><p>This policy may be updated when Ritual’s features or legal obligations change. The effective date will be revised, and material changes will be reflected in the app or release documentation.</p></section>
+        <section><h2>Contact</h2><p>For privacy questions, open an issue in the <a href="https://github.com/ScoutorcusA/ritual-app/issues">Ritual GitHub repository</a> without including meal photos, health details, location, or other sensitive information. The developer contact email shown on Ritual’s future Google Play listing may also be used for private inquiries.</p></section>
+      </article>
+    </main>
+    <footer><a class="brand" href="../"><img src="../assets/ritual-logo.png" alt="" width="36" height="36" /><span>Ritual</span></a><p>A private, mindful food photo journal.</p><div><a href="./">Privacy</a><a href="https://github.com/ScoutorcusA/ritual-app">GitHub</a><a href="https://github.com/ScoutorcusA/ritual-app/issues">Support</a></div><small>© 2026 Ritual</small></footer>
+  </body>
+</html>
