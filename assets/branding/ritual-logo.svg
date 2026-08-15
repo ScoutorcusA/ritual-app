@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title description">
+  <title id="title">Ritual app icon</title>
+  <desc id="description">A steaming bowl framed by four camera corners.</desc>
+  <rect width="1024" height="1024" fill="#F6F1E7" />
+  <g fill="none" stroke="#1E2A2D" stroke-linecap="round" stroke-linejoin="round" stroke-width="64">
+    <path d="M320 224H232V312" />
+    <path d="M704 224H792V312" />
+    <path d="M232 712V800H320" />
+    <path d="M792 712V800H704" />
+  </g>
+  <g fill="none" stroke="#71826B" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M468 500C426 466 420 426 462 388C506 350 504 304 478 270" stroke-width="48" />
+    <path d="M560 502C524 470 524 438 556 410C586 384 590 350 568 322" stroke-width="40" />
+  </g>
+  <path d="M276 576C292 720 384 812 512 812C640 812 732 720 748 576Z" fill="#1E2A2D" />
+  <ellipse cx="512" cy="578" rx="236" ry="46" fill="#1E2A2D" />
+  <ellipse cx="512" cy="580" rx="202" ry="27" fill="#F6F1E7" />
+</svg>

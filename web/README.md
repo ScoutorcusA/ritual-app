@@ -27,6 +27,10 @@ The site and Android app can live in the same repository. The website deploy onl
 
 Other static hosts such as Cloudflare Pages, Netlify, or Vercel can also publish this folder. Set the project root/output directory to `web` and leave the build command empty.
 
+## Brand icons
+
+The site uses the scalable `assets/ritual-logo.svg` for visible brand marks and includes PNG fallbacks, a multi-size favicon, an Apple touch icon, and a web app manifest. These files are generated from the authoritative vector master in `assets/branding/` by `tool/generate_brand_assets.py`; edit the master rather than individual web exports.
+
 ## Enable optional sponsorships
 
 The app and website link to `https://github.com/sponsors/ScoutorcusA`. Before publishing the support page:

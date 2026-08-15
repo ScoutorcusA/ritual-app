@@ -73,8 +73,9 @@ flutter_launcher_icons:
   ios: false
   image_path: assets/branding/ritual-logo-1024.png
   adaptive_icon_background: "#F6F1E7"
-  adaptive_icon_foreground: assets/branding/ritual-logo-1024.png
-  adaptive_icon_foreground_inset: 16
+  adaptive_icon_foreground: assets/branding/ritual-logo-foreground-1024.png
+  adaptive_icon_foreground_inset: 0
+  adaptive_icon_monochrome: assets/branding/ritual-logo-monochrome-1024.png
   min_sdk_android: 24
 
 # For information on the generic Dart part of this file, see the
