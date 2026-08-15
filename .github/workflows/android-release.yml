@@ -108,7 +108,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           printf '%s\n' \
-            "Permanent Ritual Android build." \
+            "Official Ritual Android build, signed with the maintainer-controlled release key." \
             "" \
             "- App version: ${APP_VERSION}" \
             "- Android build number: ${BUILD_NUMBER}" \
@@ -142,7 +142,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           printf '%s\n' \
-            "Automated Android build from main." \
+            "Official Ritual Android build from main, signed with the maintainer-controlled release key." \
             "" \
             "- App version: ${APP_VERSION}" \
             "- Android build number: ${BUILD_NUMBER}" \

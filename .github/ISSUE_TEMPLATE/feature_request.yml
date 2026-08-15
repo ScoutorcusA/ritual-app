@@ -1,0 +1,63 @@
+name: Feature request
+description: Suggest an improvement that fits Ritual's private, nonjudgmental approach.
+title: "[Feature]: "
+labels:
+  - enhancement
+  - needs triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Explain the user problem first. Please read the public roadmap and project principles before proposing a large feature.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the need without including private journal information.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed experience
+      description: What should a person be able to do, and what should Ritual show?
+    validations:
+      required: true
+
+  - type: textarea
+    id: privacy
+    attributes:
+      label: Privacy and permissions
+      description: Would this add networking, an account, an SDK, cloud storage, analytics, or a sensitive permission? If not, say so.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Describe any simpler or more private approach you considered.
+
+  - type: dropdown
+    id: roadmap
+    attributes:
+      label: Roadmap relationship
+      options:
+        - Now — stable Android release
+        - Next — broader public availability
+        - Later — exploration
+        - Not currently listed
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: Project principles
+      options:
+        - label: This can remain free forever and does not require ads or a paid feature tier.
+          required: true
+        - label: I have not included real journal content or other private data.
+          required: true

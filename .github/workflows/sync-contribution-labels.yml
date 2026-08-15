@@ -1,0 +1,35 @@
+name: Sync contribution labels
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/sync-contribution-labels.yml
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  sync-labels:
+    name: Create or update labels
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Sync repository labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create "good first issue" --repo "$GITHUB_REPOSITORY" --color "7057FF" --description "Approachable for a first contribution" --force
+          gh label create "help wanted" --repo "$GITHUB_REPOSITORY" --color "008672" --description "Community help is welcome" --force
+          gh label create "needs triage" --repo "$GITHUB_REPOSITORY" --color "D4C5F9" --description "Needs maintainer review and prioritization" --force
+          gh label create "bug" --repo "$GITHUB_REPOSITORY" --color "D73A4A" --description "Something is not working" --force
+          gh label create "enhancement" --repo "$GITHUB_REPOSITORY" --color "A2EEEF" --description "New feature or improvement" --force
+          gh label create "documentation" --repo "$GITHUB_REPOSITORY" --color "0075CA" --description "Documentation or website content" --force
+          gh label create "privacy" --repo "$GITHUB_REPOSITORY" --color "5319E7" --description "Privacy model or sensitive-data handling" --force
+          gh label create "accessibility" --repo "$GITHUB_REPOSITORY" --color "0E8A16" --description "Accessibility improvement" --force
+          gh label create "android" --repo "$GITHUB_REPOSITORY" --color "3DDC84" --description "Android-specific work" --force
+          gh label create "ios" --repo "$GITHUB_REPOSITORY" --color "000000" --description "Future iOS work" --force
+          gh label create "website" --repo "$GITHUB_REPOSITORY" --color "1D76DB" --description "Public website work" --force

@@ -1,14 +1,23 @@
 # Ritual
 
 [![Build Android APK](https://github.com/ScoutorcusA/ritual-app/actions/workflows/android-release.yml/badge.svg)](https://github.com/ScoutorcusA/ritual-app/actions/workflows/android-release.yml)
+[![License: MPL 2.0](https://img.shields.io/badge/License-MPL_2.0-brightgreen.svg)](LICENSE)
 
 [Read the complete Ritual wiki](https://github.com/ScoutorcusA/ritual-app/wiki) for every setting, insight rule, privacy detail, data format, and release workflow.
 
 Ritual is a private, mindful food photo journal built with Flutter. It helps people notice meals, feelings, hunger, cravings, fullness, and eating patterns without counting calories or labeling food as good or bad.
 
-The app is Android-first, works entirely on-device, and has no account, cloud sync, advertisements, subscriptions, analytics SDK, or feature paywall.
+The app is Android-first, works entirely on-device, and has no account, cloud sync, advertisements, subscriptions, analytics SDK, or feature paywall. Ritual is free forever; optional sponsorship unlocks nothing and never changes the app experience.
 
 > **Project status:** Active development. Ritual is currently a personal Android app and is not yet published on Google Play.
+
+## Open source and community
+
+Ritual's source code is licensed under the [Mozilla Public License 2.0](LICENSE). When covered source files are distributed in modified form, those files remain available under the MPL 2.0; the license remains practical for combining Ritual code with separately licensed Android or future iOS components.
+
+The source-code license does not grant rights to the Ritual name, logo, app icon, or visual identity. Read the [trademark policy](TRADEMARKS.md) before publishing a fork. Only maintainer-published packages signed with Ritual's private release identity may be called [official Ritual builds](OFFICIAL_BUILDS.md).
+
+Contributions are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md), follow the [Code of Conduct](CODE_OF_CONDUCT.md), report vulnerabilities through the [security policy](SECURITY.md), and see the short [public roadmap](ROADMAP.md). Issues labeled [`good first issue`](https://github.com/ScoutorcusA/ritual-app/labels/good%20first%20issue) are intended as approachable starting points.
 
 ## What Ritual can do
 
@@ -69,6 +78,13 @@ The app is Android-first, works entirely on-device, and has no account, cloud sy
 
 PDF, CSV, and ZIP exports are **not encrypted**. Ritual warns about this before export; exported files should be stored and shared carefully.
 
+### Support continued development
+
+- Open a transparent Support Ritual screen from Settings
+- Confirm that Ritual is free forever and identical for supporters and non-supporters
+- Optionally continue to the public support page in the device browser
+- Keep journal data and payment information out of the sponsorship handoff
+
 ## Appearance and accessibility
 
 - Light, dark, or system theme
@@ -87,6 +103,8 @@ Ritual stores its SQLite database and captured photos inside the app’s private
 App-private storage is not the same as encrypting every database or image file at rest. Device security, Ritual’s optional app lock, and Android’s application sandbox provide the main protection. Exported files leave that sandbox and are deliberately unencrypted for portability.
 
 Location and notification permissions are requested only when their related features are enabled. Location is optional, and a journal entry can use a manual place without storing coordinates.
+
+The optional support link opens `ritualapp.nishkamk.com` in the device browser. Ritual sends no journal data or payment information. If the user continues to GitHub Sponsors, GitHub handles the sponsorship under its own terms and privacy statement.
 
 Uninstalling Ritual removes its local database and app-private photos. The in-app **Delete all journal data** action provides the same journal cleanup without resetting appearance, app-lock, or reminder preferences.
 
@@ -144,6 +162,8 @@ The [Android release workflow](.github/workflows/android-release.yml) runs after
 After the workflow succeeds, download `ritual-latest.apk` from the [Ritual Latest release](https://github.com/ScoutorcusA/ritual-app/releases/tag/ritual-latest). Failed analysis, tests, signing validation, or compilation will prevent a new APK from being published.
 
 The rolling release always points to the newest build, while the [complete Releases page](https://github.com/ScoutorcusA/ritual-app/releases) keeps each versioned build available. This makes the default download simple without replacing the older published APKs.
+
+Only APKs produced by this workflow, published by the maintainer, and signed with Ritual's private release key are [official Ritual builds](OFFICIAL_BUILDS.md). Local, fork, debug, pull-request, and third-party APKs are unofficial even when built from unchanged source.
 
 ## Website
 

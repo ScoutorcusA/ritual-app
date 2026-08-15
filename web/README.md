@@ -26,3 +26,13 @@ GitHub recommends verifying `nishkamk.com` in the account’s Pages settings bef
 The site and Android app can live in the same repository. The website deploy only uploads `/web`; it does not package or modify the Flutter app.
 
 Other static hosts such as Cloudflare Pages, Netlify, or Vercel can also publish this folder. Set the project root/output directory to `web` and leave the build command empty.
+
+## Enable optional sponsorships
+
+The app and website link to `https://github.com/sponsors/ScoutorcusA`. Before publishing the support page:
+
+1. Enroll `ScoutorcusA` in GitHub Sponsors and complete its identity, bank, and tax setup.
+2. Offer one-time and optional monthly tiers with no rewards, badges, early access, credits, or app benefits.
+3. Confirm the public sponsorship URL works while signed out of GitHub.
+
+Ritual must remain identical for supporters and non-supporters. If GitHub Sponsors is not ready when the website launches, remove or temporarily hide the sponsorship button rather than leaving a broken payment link.

@@ -13,6 +13,7 @@ import '../services/journal_pdf_service.dart';
 import '../services/meal_reminder_service.dart';
 import '../theme/ritual_theme.dart';
 import 'privacy_policy_screen.dart';
+import 'support_ritual_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
@@ -629,6 +630,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onTap: _deleteAllJournalData,
                   ),
                 ],
+              ),
+            ),
+            const _SectionTitle('About Ritual'),
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: ListTile(
+                leading: const Icon(
+                  Icons.favorite_border_rounded,
+                  color: RitualColors.terracotta,
+                ),
+                title: const Text('Support Ritual'),
+                subtitle: const Text(
+                  'Optional support — Ritual is free forever',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const SupportRitualScreen(),
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 20),

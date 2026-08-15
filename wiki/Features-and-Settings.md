@@ -47,3 +47,7 @@ The lock waits five seconds after the app is backgrounded. Brief notification-sh
 - **Delete all journal data:** destructive, confirmed removal of entries, photos, highlights, and streak history.
 
 Settings such as theme, reminder times, reflection choices, and onboarding completion use Android preferences. The Ritual PIN hash and salt use secure storage. Journal content uses the local SQLite database and private files.
+
+## About Ritual
+
+**Support Ritual** explains that the app is free forever and that optional support unlocks no features, badge, early access, priority, or other benefit. **Visit support page** opens `ritualapp.nishkamk.com/support/` in the device browser. Ritual does not send journal data or payment information during this handoff.

@@ -3,8 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../theme/ritual_theme.dart';
 
-const ritualPrivacyPolicyUrl =
-    'https://ritualapp.nishkamk.com/privacy/';
+const ritualPrivacyPolicyUrl = 'https://ritualapp.nishkamk.com/privacy/';
 
 class PrivacyPolicyScreen extends StatelessWidget {
   const PrivacyPolicyScreen({super.key});
@@ -58,6 +57,11 @@ class PrivacyPolicyScreen extends StatelessWidget {
           title: 'Exports',
           body:
               'ZIP, PDF, and CSV exports are created only when you request them and choose where to save them. They are not encrypted. After export, you and the receiving storage provider or recipient control the file.',
+        ),
+        _PolicySection(
+          title: 'Optional support',
+          body:
+              'Ritual is free forever. If you choose Visit support page, Android opens ritualapp.nishkamk.com in your browser. Ritual does not send journal data or payment information. Any sponsorship is processed by the external provider under its own terms and privacy policy, and it unlocks no app features or benefits.',
         ),
         _PolicySection(
           title: 'Deletion',

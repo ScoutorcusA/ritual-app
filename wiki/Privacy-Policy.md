@@ -43,6 +43,12 @@ Ritual creates ZIP, PDF, or CSV files only after a user explicitly requests an e
 
 Ritual does not automatically share data with healthcare professionals. A user may independently choose to share an exported report with a dietitian, doctor, or another recipient.
 
+## Optional support
+
+Ritual is free forever. Optional sponsorship unlocks no app features, status, special access, or other benefits. If a user chooses **Visit support page**, Android opens `ritualapp.nishkamk.com` in the device browser. The Ritual app does not send journal data, identifiers, or payment information during this handoff.
+
+If the user continues to GitHub Sponsors, GitHub processes the sponsorship and any information the user provides under its own terms and privacy statement. Ritual does not receive payment-card details. Leaving the app to visit these pages is always optional.
+
 ## Retention and deletion
 
 Information remains on the device until the user deletes an entry, selects **Settings → Delete all journal data**, clears the app's storage through Android, or uninstalls Ritual. Deleting an entry deletes its app-private photo. Delete-all removes journal entries, private meal photos, saved calendar highlights, and streak history while retaining general app preferences.

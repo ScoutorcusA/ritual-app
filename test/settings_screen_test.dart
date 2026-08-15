@@ -103,6 +103,22 @@ void main() {
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(find.text('Support Ritual'), 300);
+    expect(
+      find.text('Optional support — Ritual is free forever'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Support Ritual'));
+    await tester.pumpAndSettle();
+    expect(find.text('Ritual is free forever.'), findsOneWidget);
+    expect(
+      find.textContaining('does not unlock features or change the app'),
+      findsOneWidget,
+    );
+    expect(find.text('Visit support page'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
     await tester.scrollUntilVisible(find.text('Delete all journal data'), 300);
     await tester.tap(find.text('Delete all journal data'));
     await tester.pumpAndSettle();

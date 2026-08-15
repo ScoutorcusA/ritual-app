@@ -37,7 +37,7 @@ Play Console can change which follow-up questions appear. Use these answers when
 
 ### Reconsider “No data collected” if any of these are added
 
-- analytics, crash reporting, telemetry, cloud backup, sync, accounts, donations or payments inside the app;
+- analytics, crash reporting, telemetry, cloud backup, sync, accounts, or payments processed inside the app;
 - a server-based geocoder, AI analysis, image processing, or nutrition API;
 - remote notification tokens;
 - support uploads or automatic diagnostic logs;
@@ -75,7 +75,7 @@ Use this statement in the store listing and keep the equivalent text inside the 
 | Contains ads | **No** |
 | App access | **All functionality is available without login.** Explain optional app lock; reviewers can leave it disabled. |
 | Target audience | **Adults / not directed to children.** Select the age groups matching the final listing strategy and do not enroll in Families without another review. |
-| Financial features | **None** for the current build. If donations are later added in-app, review Payments policy and Data Safety again. |
+| Financial features | **None.** The optional external creator-sponsorship link is not a banking, lending, investing, insurance, cryptocurrency, money-transfer, or other financial-service feature. |
 | Government app | **No** |
 | News app | **No** |
 
@@ -84,3 +84,17 @@ Use this statement in the store listing and keep the equivalent text inside the 
 Suggested App access/review note:
 
 > Ritual requires no account. Tap the camera button to create an entry. Location, notifications, reflection scales, streaks, and app lock are optional. Device authentication may be left disabled during review. All journal data and photos are stored locally; Settings includes report export and Delete all journal data.
+
+## Payments policy and optional support
+
+Settings includes an optional **Support Ritual** entry. It opens an explanatory in-app screen, followed by a user-initiated external link to `ritualapp.nishkamk.com/support/`. The support page may lead to the developer's GitHub Sponsors profile.
+
+This is a direct creator contribution rather than an in-app purchase:
+
+- Ritual is free forever and every feature is available without payment.
+- Supporting Ritual grants no digital content, badge, credit, early access, priority, recognition, or other benefit.
+- Ritual does not process the payment or receive payment-card information.
+- The prompt is confined to Settings and does not interrupt journaling.
+- The support page must not sell Ritual features or services.
+
+Google Play's Payments FAQ treats a contribution as a peer-to-peer payment, without requiring Play Billing, when 100% goes to the creator and it grants no digital content or service. Recheck that policy before each production submission because regional payment-link programs and wording can change.

@@ -1,0 +1,78 @@
+name: Bug report
+description: Report a reproducible problem without sharing private journal data.
+title: "[Bug]: "
+labels:
+  - bug
+  - needs triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Ritual. Search existing issues first and use only synthetic or fully redacted content.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the problem and its effect in a few sentences.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Use synthetic entries and images. Include the smallest reliable sequence.
+      placeholder: |
+        1. Open ...
+        2. Tap ...
+        3. See ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Ritual version and build
+      description: Find this on the release page or in the downloaded APK filename.
+      placeholder: "1.0.0, build 10042"
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device and Android version
+      placeholder: "Pixel 8, Android 16"
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add redacted logs or synthetic screenshots if useful. Never attach a real Ritual export.
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Privacy check
+      options:
+        - label: I have not included real meal photos, reflections, locations, exports, PINs, credentials, or signing material.
+          required: true
+        - label: I searched for an existing issue describing this problem.
+          required: true
