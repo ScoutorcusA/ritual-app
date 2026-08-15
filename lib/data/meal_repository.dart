@@ -25,11 +25,18 @@ abstract class MealRepository {
 }
 
 class SqliteMealRepository implements MealRepository {
+  SqliteMealRepository({
+    this.databaseName = 'ritual.db',
+    this.photoDirectoryName = 'ritual_photos',
+  });
+
+  final String databaseName;
+  final String photoDirectoryName;
   Database? _database;
 
   Future<Database> get _db async {
     if (_database != null) return _database!;
-    final databasePath = p.join(await getDatabasesPath(), 'ritual.db');
+    final databasePath = p.join(await getDatabasesPath(), databaseName);
     _database = await openDatabase(
       databasePath,
       version: 5,
@@ -159,7 +166,7 @@ class SqliteMealRepository implements MealRepository {
     });
 
     final documents = await getApplicationDocumentsDirectory();
-    final journalPhotos = Directory(p.join(documents.path, 'ritual_photos'));
+    final journalPhotos = Directory(p.join(documents.path, photoDirectoryName));
     if (await journalPhotos.exists()) {
       await journalPhotos.delete(recursive: true);
     }
@@ -168,7 +175,7 @@ class SqliteMealRepository implements MealRepository {
   @override
   Future<String> keepCapturedPhoto(XFile temporaryPhoto) async {
     final documents = await getApplicationDocumentsDirectory();
-    final photos = Directory(p.join(documents.path, 'ritual_photos'));
+    final photos = Directory(p.join(documents.path, photoDirectoryName));
     await photos.create(recursive: true);
 
     final sourceExtension = p.extension(temporaryPhoto.path).toLowerCase();
@@ -259,7 +266,7 @@ class SqliteMealRepository implements MealRepository {
     if (pending.isEmpty) return const [];
 
     final documents = await getApplicationDocumentsDirectory();
-    final photos = Directory(p.join(documents.path, 'ritual_photos'));
+    final photos = Directory(p.join(documents.path, photoDirectoryName));
     await photos.create(recursive: true);
     final createdFiles = <File>[];
     final prepared = <({MealImport source, String path})>[];
