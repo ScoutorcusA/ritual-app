@@ -8,6 +8,8 @@ Confirm Android **Settings → Apps → Ritual → Notifications** is allowed, t
 
 Position lookup and reverse geocoding are separate Android services. Android's geocoder can fail because its backend is unavailable, offline, rate-limited, or has no result for an area. Ritual reports that error instead of saving raw coordinates. Retry with connectivity or enter a city and country manually.
 
+The first position attempt uses Android's normal fused location provider. A retry starts a new request through Android's direct location manager so it does not simply repeat a stuck fused-provider request. While troubleshooting, open **Settings → About Ritual → Copy debug log** after reproducing the failure and paste the result into a private support message. The log identifies which stage failed without including coordinates or the returned place name.
+
 ## App asks for authentication after taking a photo
 
 Current builds mark camera capture as a trusted interruption. Update to the latest APK if an older build still locks on return. Normal background use longer than five seconds should lock when app lock is enabled.

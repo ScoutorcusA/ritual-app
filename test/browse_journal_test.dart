@@ -50,7 +50,7 @@ void main() {
     expect(find.text('Calm and happy'), findsOneWidget);
     expect(find.text('Total moments'), findsOneWidget);
     expect(find.text('Per logged day'), findsOneWidget);
-    expect(find.text('Typical gap'), findsOneWidget);
+    expect(find.text('Common feeling'), findsOneWidget);
 
     await tester.tap(find.text(DateFormat('EEEE, MMMM d').format(now)));
     await tester.pumpAndSettle();

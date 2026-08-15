@@ -18,6 +18,7 @@ Depending on the features a user chooses, Ritual may access or store:
 - optional hunger, craving, and fullness ratings;
 - an optional city-and-country label; older or imported entries may contain coordinates created by earlier versions;
 - app preferences, reminder times, streak progress, and calendar highlights;
+- up to 120 timestamped technical diagnostic events, excluding journal content, photos, feelings, place names, and coordinates;
 - an optional four-digit Ritual PIN hash and salt, or the result of Android device authentication.
 
 This information is used only to provide the journal, Browse views, local insights, reminders, streaks, security, and exports requested by the user.
@@ -26,7 +27,7 @@ This information is used only to provide the journal, Browse views, local insigh
 
 Journal records are stored in a SQLite database inside Ritual's Android application sandbox. Captured photographs are copied into app-private storage and are not added to Android's shared photo gallery. Preferences remain on the device, and Ritual PIN material is stored through Android-backed secure storage.
 
-Ritual does not transmit journal entries, photographs, ratings, notes, coordinates, identifiers, diagnostics, or usage activity to Ritual or to advertising or analytics companies. The release application does not request general internet access.
+Ritual does not transmit journal entries, photographs, ratings, notes, coordinates, identifiers, diagnostics, or usage activity to Ritual or to advertising or analytics companies. The release application does not request general internet access. The user can explicitly place the diagnostics log on the Android clipboard with **Copy debug log** and then controls where it is pasted.
 
 When a user requests a place name, Ritual obtains only approximate foreground location and calls Android's system geocoding service. The device or its configured geocoding provider may process the approximate coordinates to return a city and country. Ritual retains the city-and-country label rather than the newly obtained raw coordinates. Ritual does not control that provider's data practices; those practices are governed by the device provider's applicable privacy terms. A user can avoid geocoding by entering a city manually or by omitting location.
 

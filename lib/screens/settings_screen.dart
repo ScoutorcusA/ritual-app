@@ -11,6 +11,7 @@ import '../services/journal_archive_service.dart';
 import '../services/journal_csv_service.dart';
 import '../services/journal_pdf_service.dart';
 import '../services/meal_reminder_service.dart';
+import '../services/debug_log_service.dart';
 import '../theme/ritual_theme.dart';
 import 'privacy_policy_screen.dart';
 import 'support_ritual_screen.dart';
@@ -185,6 +186,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _restartWelcome() async {
     await widget.settings.restartOnboarding();
     if (mounted) Navigator.of(context).pop();
+  }
+
+  Future<void> _copyDebugLog() async {
+    try {
+      final log = await DebugLogService.instance.copyableText();
+      await Clipboard.setData(ClipboardData(text: log));
+      if (mounted) {
+        _message('Debug log copied. You can paste it into a message.');
+      }
+    } catch (_) {
+      if (mounted) _message('The debug log could not be copied.', error: true);
+    }
   }
 
   Future<void> _exportReport() async {
@@ -635,21 +648,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const _SectionTitle('About Ritual'),
             Card(
               clipBehavior: Clip.antiAlias,
-              child: ListTile(
-                leading: const Icon(
-                  Icons.favorite_border_rounded,
-                  color: RitualColors.terracotta,
-                ),
-                title: const Text('Support Ritual'),
-                subtitle: const Text(
-                  'Optional support — Ritual is free forever',
-                ),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const SupportRitualScreen(),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(
+                      Icons.favorite_border_rounded,
+                      color: RitualColors.terracotta,
+                    ),
+                    title: const Text('Support Ritual'),
+                    subtitle: const Text(
+                      'Optional support — Ritual is free forever',
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const SupportRitualScreen(),
+                      ),
+                    ),
                   ),
-                ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.bug_report_outlined),
+                    title: const Text('Copy debug log'),
+                    subtitle: const Text(
+                      'Recent technical events only — no photos, notes, places, or coordinates',
+                    ),
+                    trailing: const Icon(Icons.copy_outlined),
+                    onTap: _copyDebugLog,
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 20),

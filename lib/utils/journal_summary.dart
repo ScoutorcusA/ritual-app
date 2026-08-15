@@ -5,13 +5,13 @@ class JournalSummary {
     required this.totalEntries,
     required this.loggedDays,
     required this.mealsPerLoggedDay,
-    required this.typicalSameDayGap,
+    required this.commonFeeling,
   });
 
   final int totalEntries;
   final int loggedDays;
   final double mealsPerLoggedDay;
-  final Duration? typicalSameDayGap;
+  final String? commonFeeling;
 
   factory JournalSummary.fromEntries(List<MealEntry> entries) {
     if (entries.isEmpty) {
@@ -19,7 +19,7 @@ class JournalSummary {
         totalEntries: 0,
         loggedDays: 0,
         mealsPerLoggedDay: 0,
-        typicalSameDayGap: null,
+        commonFeeling: null,
       );
     }
 
@@ -30,43 +30,31 @@ class JournalSummary {
       byDay.putIfAbsent(key, () => []).add(value);
     }
 
-    final gaps = <Duration>[];
-    for (final times in byDay.values) {
-      times.sort();
-      for (var index = 1; index < times.length; index++) {
-        gaps.add(times[index].difference(times[index - 1]));
+    final feelingCounts = <String, int>{};
+    for (final entry in entries) {
+      for (final feeling in entry.feelings.toSet()) {
+        if (feeling.trim().isNotEmpty) {
+          feelingCounts.update(
+            feeling,
+            (count) => count + 1,
+            ifAbsent: () => 1,
+          );
+        }
       }
     }
-    gaps.sort();
-
-    Duration? typicalGap;
-    if (gaps.isNotEmpty) {
-      final middle = gaps.length ~/ 2;
-      typicalGap = gaps.length.isOdd
-          ? gaps[middle]
-          : Duration(
-              milliseconds:
-                  (gaps[middle - 1].inMilliseconds +
-                      gaps[middle].inMilliseconds) ~/
-                  2,
-            );
-    }
+    final rankedFeelings = feelingCounts.entries.toList()
+      ..sort((left, right) {
+        final byCount = right.value.compareTo(left.value);
+        return byCount != 0 ? byCount : left.key.compareTo(right.key);
+      });
 
     return JournalSummary(
       totalEntries: entries.length,
       loggedDays: byDay.length,
       mealsPerLoggedDay: entries.length / byDay.length,
-      typicalSameDayGap: typicalGap,
+      commonFeeling: rankedFeelings.firstOrNull?.key,
     );
   }
 
-  String get typicalGapLabel {
-    final gap = typicalSameDayGap;
-    if (gap == null) return '—';
-    final hours = gap.inHours;
-    final minutes = gap.inMinutes.remainder(60);
-    if (hours == 0) return '${minutes}m';
-    if (minutes == 0) return '${hours}h';
-    return '${hours}h ${minutes}m';
-  }
+  String get commonFeelingLabel => commonFeeling ?? '—';
 }

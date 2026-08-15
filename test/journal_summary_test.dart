@@ -3,13 +3,13 @@ import 'package:ritual/models/meal_entry.dart';
 import 'package:ritual/utils/journal_summary.dart';
 
 void main() {
-  test('summarizes entries per logged day and median same-day gap', () {
+  test('summarizes entries per logged day and common feeling', () {
     final entries = [
-      _entry(1, DateTime(2026, 8, 10, 8)),
-      _entry(2, DateTime(2026, 8, 10, 12)),
-      _entry(3, DateTime(2026, 8, 10, 18)),
-      _entry(4, DateTime(2026, 8, 11, 9)),
-      _entry(5, DateTime(2026, 8, 11, 14)),
+      _entry(1, DateTime(2026, 8, 10, 8), const ['Calm']),
+      _entry(2, DateTime(2026, 8, 10, 12), const ['Happy', 'Calm']),
+      _entry(3, DateTime(2026, 8, 10, 18), const ['Calm']),
+      _entry(4, DateTime(2026, 8, 11, 9), const ['Happy']),
+      _entry(5, DateTime(2026, 8, 11, 14), const []),
     ];
 
     final summary = JournalSummary.fromEntries(entries);
@@ -17,26 +17,30 @@ void main() {
     expect(summary.totalEntries, 5);
     expect(summary.loggedDays, 2);
     expect(summary.mealsPerLoggedDay, 2.5);
-    expect(summary.typicalSameDayGap, const Duration(hours: 5));
-    expect(summary.typicalGapLabel, '5h');
+    expect(summary.commonFeeling, 'Calm');
+    expect(summary.commonFeelingLabel, 'Calm');
   });
 
-  test('does not treat overnight time as a meal gap', () {
+  test('shows a dash when no feelings have been recorded', () {
     final summary = JournalSummary.fromEntries([
       _entry(1, DateTime(2026, 8, 10, 20)),
       _entry(2, DateTime(2026, 8, 11, 8)),
     ]);
 
-    expect(summary.typicalSameDayGap, isNull);
-    expect(summary.typicalGapLabel, '—');
+    expect(summary.commonFeeling, isNull);
+    expect(summary.commonFeelingLabel, '—');
   });
 }
 
-MealEntry _entry(int id, DateTime createdAt) => MealEntry(
+MealEntry _entry(
+  int id,
+  DateTime createdAt, [
+  List<String> feelings = const [],
+]) => MealEntry(
   id: id,
   imagePath: '/private/$id.jpg',
   mealType: MealType.values[id % MealType.values.length],
-  feelings: const [],
+  feelings: feelings,
   note: '',
   createdAt: createdAt,
 );

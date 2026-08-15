@@ -2,12 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geolocator_android/geolocator_android.dart';
 import 'package:geolocator_platform_interface/geolocator_platform_interface.dart';
 
 import '../controllers/journal_controller.dart';
 import '../controllers/settings_controller.dart';
 import '../models/meal_entry.dart';
 import '../services/city_geocoder.dart';
+import '../services/debug_log_service.dart';
 import '../theme/ritual_theme.dart';
 import '../widgets/meal_photo.dart';
 
@@ -45,6 +47,7 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
   int? _hungerLevel;
   int? _fullnessLevel;
   int? _cravingLevel;
+  int _locationAttempt = 0;
 
   @override
   void initState() {
@@ -76,13 +79,27 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
   }
 
   Future<void> _addLocation() async {
+    if (_findingLocation) return;
+    final attempt = ++_locationAttempt;
+    final useDirectProvider = attempt > 1;
     setState(() {
       _findingLocation = true;
-      _locationMessage = null;
+      _locationMessage = useDirectProvider
+          ? 'Trying Android’s alternate location provider…'
+          : 'Finding your approximate location…';
     });
+    unawaited(
+      DebugLogService.instance.record(
+        'location',
+        'attempt $attempt started; provider=${useDirectProvider ? 'direct' : 'fused'}',
+      ),
+    );
     try {
       final geolocator = GeolocatorPlatform.instance;
       if (!await geolocator.isLocationServiceEnabled()) {
+        unawaited(
+          DebugLogService.instance.record('location', 'services disabled'),
+        );
         throw const _LocationIssue(
           'Turn on Location Services, then try again.',
         );
@@ -99,16 +116,44 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
           'Location is blocked for Ritual. You can enable it in Android settings.',
         );
       }
-      final lastKnown = await geolocator.getLastKnownPosition();
+      unawaited(
+        DebugLogService.instance.record(
+          'location',
+          'permission=${permission.name}',
+        ),
+      );
+      final settings = AndroidSettings(
+        accuracy: LocationAccuracy.low,
+        timeLimit: const Duration(seconds: 30),
+        forceLocationManager: useDirectProvider,
+      );
+      final lastKnown = await geolocator.getLastKnownPosition(
+        forceLocationManager: useDirectProvider,
+      );
+      unawaited(
+        DebugLogService.instance.record(
+          'location',
+          'last-known available=${lastKnown != null}',
+        ),
+      );
       Position position;
       try {
         position = await geolocator.getCurrentPosition(
-          locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.low,
-            timeLimit: Duration(seconds: 30),
+          locationSettings: settings,
+        );
+        unawaited(
+          DebugLogService.instance.record(
+            'location',
+            'fresh approximate position received',
           ),
         );
       } on TimeoutException {
+        unawaited(
+          DebugLogService.instance.record(
+            'location',
+            'position timed out; fallback=${lastKnown != null}',
+          ),
+        );
         if (lastKnown == null) {
           throw const _LocationIssue(
             'Android did not find a location within 30 seconds. Try near a '
@@ -121,6 +166,9 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
         position = lastKnown;
       }
       try {
+        unawaited(
+          DebugLogService.instance.record('location', 'city lookup started'),
+        );
         final label = await _cityGeocoder
             .cityAndCountry(
               latitude: position.latitude,
@@ -135,28 +183,55 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
           _locationLabel = label;
           _locationMessage = null;
         });
+        unawaited(
+          DebugLogService.instance.record('location', 'city lookup succeeded'),
+        );
         return;
       } on CityGeocoderException catch (error) {
+        unawaited(
+          DebugLogService.instance.record(
+            'location',
+            'city lookup failed: ${error.message}',
+          ),
+        );
         throw _LocationIssue(
           '${error.message} Enter your city manually, or try again later.',
         );
       } on TimeoutException {
+        unawaited(
+          DebugLogService.instance.record('location', 'city lookup timed out'),
+        );
         throw const _LocationIssue(
           'Android’s place-name service did not respond. Enter your city '
           'manually, or try again later.',
         );
       }
     } on _LocationIssue catch (error) {
+      unawaited(
+        DebugLogService.instance.record('location', 'failed: ${error.message}'),
+      );
       if (mounted) setState(() => _locationMessage = error.message);
     } on LocationServiceDisabledException {
+      unawaited(
+        DebugLogService.instance.record('location', 'services disabled'),
+      );
       if (mounted) {
         setState(() => _locationMessage = 'Android Location Services are off.');
       }
     } on PermissionDeniedException {
+      unawaited(
+        DebugLogService.instance.record('location', 'permission denied'),
+      );
       if (mounted) {
         setState(() => _locationMessage = 'Android denied location access.');
       }
     } on PlatformException catch (error) {
+      unawaited(
+        DebugLogService.instance.record(
+          'location',
+          'platform failure: ${error.code}',
+        ),
+      );
       if (mounted) {
         setState(
           () => _locationMessage =
@@ -164,6 +239,12 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
         );
       }
     } catch (error) {
+      unawaited(
+        DebugLogService.instance.record(
+          'location',
+          'unexpected failure: ${error.runtimeType}',
+        ),
+      );
       if (mounted) {
         setState(
           () => _locationMessage =
@@ -470,16 +551,24 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
               ),
             ],
           ),
-          if (_locationMessage != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              _locationMessage!,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.error,
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 54,
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Text(
+                _locationMessage ?? '',
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: _findingLocation
+                      ? colors.onSurfaceVariant
+                      : colors.error,
+                ),
               ),
             ),
-          ],
-          const SizedBox(height: 28),
+          ),
+          const SizedBox(height: 12),
           FilledButton.icon(
             onPressed: _saving ? null : _save,
             icon: const Icon(Icons.check_rounded),

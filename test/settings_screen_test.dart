@@ -119,6 +119,9 @@ void main() {
     await tester.pageBack();
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(find.text('Copy debug log'), 300);
+    expect(find.text('Copy debug log'), findsOneWidget);
+
     await tester.scrollUntilVisible(find.text('Delete all journal data'), 300);
     await tester.tap(find.text('Delete all journal data'));
     await tester.pumpAndSettle();

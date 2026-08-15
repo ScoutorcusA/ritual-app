@@ -151,8 +151,8 @@ class JournalPdfService {
                   'Per logged day',
                 ),
                 _summaryMetric(
-                  _pdfSafe(summary.typicalGapLabel),
-                  'Typical gap',
+                  _pdfSafe(summary.commonFeelingLabel),
+                  'Common feeling',
                 ),
               ],
             ),
@@ -165,9 +165,9 @@ class JournalPdfService {
           pdf.SizedBox(height: 5),
           pdf.Text(
             'This report contains information recorded by the journal owner. '
-            'Ratings use a 1-to-5 reflection scale and may be blank. The '
-            'typical gap is the median time between entries recorded on the '
-            'same day; overnight gaps are excluded.',
+            'Ratings use a 1-to-5 reflection scale and may be blank. Common '
+            'feeling is the feeling selected on the greatest number of entries '
+            'in this report period.',
             style: const pdf.TextStyle(fontSize: 10, lineSpacing: 2),
           ),
           pdf.SizedBox(height: 22),

@@ -9,7 +9,7 @@ Entries are grouped by local calendar day. Each large day card contains:
 - a collage of up to four entries;
 - a short feelings summary.
 
-Tapping a day opens a dedicated daily journal with every entry from that day. Above the day cards, the summary shows total moments, entries per logged day, and the median time gap between consecutive entries on the same day. A day with only one entry does not contribute a gap.
+Tapping a day opens a dedicated daily journal with every entry from that day. Above the day cards, the summary shows total moments, entries per logged day, and the feeling selected on the greatest number of entries. When no feelings have been recorded, common feeling displays a dash. Ties are resolved alphabetically so the result remains stable.
 
 Insight cards are inserted between daily cards in deterministic order. They describe correlations only; they do not diagnose health conditions or claim causation.
 

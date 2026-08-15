@@ -45,4 +45,4 @@ Canceling the editor discards the copied private photo. Deleting an entry delete
 
 ## Derived data
 
-Daily grouping, feeling summaries, top-level journal summary, insights, and current streak are recalculated from entries. Best streak and selected calendar highlights are persisted. Reminder schedules are regenerated for the next 14 days rather than stored as business records.
+Daily grouping, feeling summaries, the top-level journal summary (including common feeling), insights, and current streak are recalculated from entries. Best streak and selected calendar highlights are persisted. Reminder schedules are regenerated for the next 14 days rather than stored as business records. A separate bounded preferences list retains up to 120 technical diagnostic events for the user-controlled **Copy debug log** action; it excludes journal content and location values.

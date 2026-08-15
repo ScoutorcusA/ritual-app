@@ -7,6 +7,7 @@ Ritual has no login, backend, cloud sync, advertisements, subscriptions, analyti
 - SQLite database: `ritual.db`
 - private photo directory: `ritual_photos/`
 - ordinary preferences: theme, reminder state/times, streak display, reflection toggles, onboarding completion
+- a bounded diagnostics log containing recent technical outcomes, with no journal content, photos, place names, or coordinates
 - secure storage: Ritual PIN salt and repeated SHA-256 hash
 
 Captured files are copied into the app-private documents directory rather than Android shared media storage, so they do not appear in Gallery. Android backup is disabled. Uninstalling the app removes local journal data unless the user first exports it.
@@ -19,6 +20,8 @@ Captured files are copied into the app-private documents directory rather than A
 - **Device authentication:** invoked only when device lock is selected or used to unlock.
 
 Location obtains an approximate position, passes it to Android's system geocoder, and retains only the resulting city-and-country label. Newly obtained raw coordinates are not saved. If Android's geocoder is unavailable, Ritual reports the actual failure and offers manual city entry. Older entries or imported archives may still contain coordinates created by earlier versions.
+
+The diagnostics log keeps at most 120 timestamped technical events in ordinary app preferences. It is never transmitted automatically. **Copy debug log** places it on the Android clipboard only when selected, after which the user controls where it is pasted. Uninstalling or clearing Ritual's app storage removes it.
 
 ## App lock
 

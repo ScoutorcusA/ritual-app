@@ -37,7 +37,7 @@ Contributions are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md), follow
 - Show each day’s date, moment count, and a short feelings summary
 - Open a dedicated daily journal containing every entry from that day
 - Intermix deterministic insight cards between journal days to surface patterns without making medical conclusions
-- Summarize total moments, average entries per logged day, and the median gap between same-day entries
+- Summarize total moments, average entries per logged day, and the most commonly selected feeling
 
 ### Browse visually
 
@@ -103,6 +103,8 @@ Ritual stores its SQLite database and captured photos inside the app’s private
 App-private storage is not the same as encrypting every database or image file at rest. Device security, Ritual’s optional app lock, and Android’s application sandbox provide the main protection. Exported files leave that sandbox and are deliberately unencrypted for portability.
 
 Location and notification permissions are requested only when their related features are enabled. Ritual requests coarse foreground location, converts it to a city-and-country label, and does not retain newly obtained raw coordinates. A place can also be entered manually.
+
+Settings includes a copyable, bounded debug log for troubleshooting. It records recent technical outcomes such as location permission, provider, timeout, and geocoder status, but excludes journal text, feelings, photos, place names, and coordinates. The log stays on the device unless the user explicitly copies and shares it.
 
 The optional support link opens `ritualapp.nishkamk.com` in the device browser. Ritual sends no journal data or payment information. If the user continues to GitHub Sponsors, GitHub handles the sponsorship under its own terms and privacy statement.
 

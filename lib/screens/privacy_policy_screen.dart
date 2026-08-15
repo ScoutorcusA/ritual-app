@@ -46,7 +46,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
         _PolicySection(
           title: 'Information on your device',
           body:
-              'Depending on your choices, Ritual may store meal photos, meal types, feelings, notes, dates, hunger, craving and fullness ratings, a city-and-country label, preferences, reminder times, and streak progress. Photos stay in app-private storage and do not appear in Android Gallery. Older or imported entries may contain coordinates created by earlier versions.',
+              'Depending on your choices, Ritual may store meal photos, meal types, feelings, notes, dates, hunger, craving and fullness ratings, a city-and-country label, preferences, reminder times, and streak progress. Photos stay in app-private storage and do not appear in Android Gallery. Older or imported entries may contain coordinates created by earlier versions. Ritual also keeps a bounded technical debug log that excludes journal content, photos, place names, and coordinates. It is shared only if you choose Copy debug log and paste it elsewhere.',
         ),
         _PolicySection(
           title: 'Location and permissions',

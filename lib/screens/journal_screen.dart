@@ -312,8 +312,8 @@ class _JournalSummaryCard extends StatelessWidget {
               label: 'Per logged day',
             ),
             _SummaryMetric(
-              value: summary.typicalGapLabel,
-              label: 'Typical gap',
+              value: summary.commonFeelingLabel,
+              label: 'Common feeling',
             ),
           ],
         ),
