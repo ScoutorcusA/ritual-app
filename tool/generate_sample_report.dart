@@ -16,6 +16,8 @@ Future<void> main() async {
       (MealType.dinner, DateTime(2026, 8, 10, 19, 20), 0xffb86652),
       (MealType.breakfast, DateTime(2026, 8, 11, 8, 40), 0xffe0bd65),
       (MealType.snack, DateTime(2026, 8, 11, 15, 10), 0xff8c789c),
+      (MealType.snack, DateTime(2026, 8, 11, 17, 45), 0xff6f8da8),
+      (MealType.dinner, DateTime(2026, 8, 12, 20, 5), 0xff9d7554),
     ];
     for (final (index, moment) in moments.indexed) {
       final photo = File('${temporary.path}/meal-$index.jpg');
@@ -41,6 +43,12 @@ Future<void> main() async {
               ? 'A relaxed meal with enough time to notice the flavors.'
               : index == 4
               ? 'Quick snack, eaten outside.\nI felt more settled afterward.'
+              : index == 6
+              ? List.generate(
+                  12,
+                  (line) =>
+                      'Reflection ${line + 1}: I noticed a different part of the meal and recorded enough context to discuss it later.',
+                ).join('\n')
               : '',
           createdAt: moment.$2,
           locationLabel: index < 3 ? 'Home' : 'Neighborhood cafe, downtown',
@@ -63,7 +71,7 @@ Future<void> main() async {
     final output = Directory('output/pdf');
     await output.create(recursive: true);
     await File(
-      '${output.path}/ritual-sample-clinician-report.pdf',
+      '${output.path}/ritual-sample-journal-report.pdf',
     ).writeAsBytes(report.bytes, flush: true);
 
     final csv = JournalCsvService().createReport(entries, range: range);

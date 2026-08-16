@@ -6,15 +6,19 @@ import 'package:archive/archive_io.dart';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 
+import '../l10n/ritual_i18n.dart';
 import '../models/meal_entry.dart';
 
 class RitualArchiveException implements Exception {
-  const RitualArchiveException(this.message);
+  const RitualArchiveException(this.source, {this.values = const {}});
 
-  final String message;
+  final String source;
+  final Map<String, Object?> values;
+
+  String get message => tr(source, values: values);
 
   @override
-  String toString() => message;
+  String toString() => tr(message);
 }
 
 class ArchiveExportResult {
@@ -105,13 +109,15 @@ class JournalArchiveService {
         final photo = File(entry.imagePath);
         if (!await photo.exists()) {
           throw RitualArchiveException(
-            'The photo for entry ${entry.id} is missing. Nothing was exported.',
+            'The photo for entry {entryId} is missing. Nothing was exported.',
+            values: {'entryId': entry.id},
           );
         }
         final size = await photo.length();
         if (size > _maxPhotoBytes) {
           throw RitualArchiveException(
-            'The photo for entry ${entry.id} is unexpectedly large.',
+            'The photo for entry {entryId} is unexpectedly large.',
+            values: {'entryId': entry.id},
           );
         }
         totalPhotoBytes += size;
@@ -370,7 +376,10 @@ class JournalArchiveService {
     }
     final photo = archive.find(photoPath);
     if (photo == null || !photo.isFile || photo.size > _maxPhotoBytes) {
-      throw RitualArchiveException('The exported photo $photoPath is missing.');
+      throw RitualArchiveException(
+        'The exported photo {photoPath} is missing.',
+        values: {'photoPath': photoPath},
+      );
     }
     final extension = _safePhotoExtension(p.extension(photoPath));
     final stagedPhoto = File(p.join(staging.path, 'photo_$index$extension'));
@@ -379,17 +388,21 @@ class JournalArchiveService {
       photo.writeContent(output);
       await output.close();
     } catch (_) {
-      throw RitualArchiveException(
-        encrypted
-            ? 'The export password is incorrect, or an encrypted photo is damaged.'
-            : 'The exported photo $photoPath could not be read.',
-      );
+      throw encrypted
+          ? const RitualArchiveException(
+              'The export password is incorrect, or an encrypted photo is damaged.',
+            )
+          : RitualArchiveException(
+              'The exported photo {photoPath} could not be read.',
+              values: {'photoPath': photoPath},
+            );
     }
     final actualHash = (await sha256.bind(stagedPhoto.openRead()).first)
         .toString();
     if (actualHash != expectedHash) {
       throw RitualArchiveException(
-        'The exported photo $photoPath failed verification.',
+        'The exported photo {photoPath} failed verification.',
+        values: {'photoPath': photoPath},
       );
     }
     final fingerprintValues = Map<String, dynamic>.from(raw)
@@ -481,7 +494,10 @@ class JournalArchiveService {
   int? _nullableScale(Object? value, String name) {
     if (value == null) return null;
     if (value is! int || value < 1 || value > 5) {
-      throw RitualArchiveException('An exported $name rating is invalid.');
+      throw RitualArchiveException(
+        'An exported {ratingName} rating is invalid.',
+        values: {'ratingName': name},
+      );
     }
     return value;
   }

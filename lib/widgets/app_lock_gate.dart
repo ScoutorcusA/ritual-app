@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../controllers/settings_controller.dart';
+import '../l10n/ritual_i18n.dart';
 import '../theme/ritual_theme.dart';
 
 class AppLockGate extends StatefulWidget {
@@ -19,6 +20,12 @@ class AppLockGate extends StatefulWidget {
     final scope = context
         .dependOnInheritedWidgetOfExactType<_TrustedInterruptionScope>();
     return scope == null ? action() : scope.run(action);
+  }
+
+  static bool interactionAllowed(BuildContext context) {
+    final scope = context
+        .dependOnInheritedWidgetOfExactType<_TrustedInterruptionScope>();
+    return scope?.enabled ?? true;
   }
 
   @override
@@ -155,7 +162,7 @@ class _AppLockGateState extends State<AppLockGate> {
     setState(() {
       _authenticating = false;
       _locked = !unlocked;
-      if (!unlocked) _message = 'Ritual is still locked.';
+      if (!unlocked) _message = tr('Ritual is still locked.');
     });
   }
 
@@ -198,8 +205,8 @@ class _AppLockGateState extends State<AppLockGate> {
     setState(() {
       _pin = '';
       _message = _blockedUntil == null
-          ? 'That PIN was not correct.'
-          : 'Too many attempts. Try again in 30 seconds.';
+          ? tr('That PIN was not correct.')
+          : tr('Too many attempts. Try again in 30 seconds.');
     });
   }
 
@@ -232,14 +239,16 @@ class _AppLockGateState extends State<AppLockGate> {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Your journal is private',
+                    tr('Your journal is private'),
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     pinMode
-                        ? 'Enter your four-digit Ritual PIN.'
-                        : 'Use your fingerprint or device screen lock to continue.',
+                        ? tr('Enter your four-digit Ritual PIN.')
+                        : tr(
+                            'Use your fingerprint or device screen lock to continue.',
+                          ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
@@ -284,7 +293,7 @@ class _AppLockGateState extends State<AppLockGate> {
                           width: 72,
                           height: 64,
                           child: IconButton(
-                            tooltip: 'Delete digit',
+                            tooltip: tr('Delete digit'),
                             onPressed: _pin.isEmpty
                                 ? null
                                 : () => setState(
@@ -303,14 +312,17 @@ class _AppLockGateState extends State<AppLockGate> {
                       onPressed: _authenticating ? null : _authenticate,
                       icon: const Icon(Icons.fingerprint_rounded),
                       label: Text(
-                        _authenticating ? 'Checking…' : 'Unlock Ritual',
+                        _authenticating ? tr('Checking…') : tr('Unlock Ritual'),
                       ),
                     ),
                   if (_message != null || remaining != null) ...[
                     const SizedBox(height: 14),
                     Text(
                       remaining != null && remaining > 0
-                          ? 'Try again in $remaining seconds.'
+                          ? tr(
+                              'Try again in {count} seconds.',
+                              values: {'count': remaining},
+                            )
                           : _message ?? '',
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -338,6 +350,7 @@ class _AppLockGateState extends State<AppLockGate> {
                 ignoring: _locked,
                 child: _TrustedInterruptionScope(
                   run: _runTrustedInterruption,
+                  enabled: !_locked,
                   child: widget.child,
                 ),
               ),
@@ -351,12 +364,18 @@ class _AppLockGateState extends State<AppLockGate> {
 }
 
 class _TrustedInterruptionScope extends InheritedWidget {
-  const _TrustedInterruptionScope({required this.run, required super.child});
+  const _TrustedInterruptionScope({
+    required this.run,
+    required this.enabled,
+    required super.child,
+  });
 
   final Future<T> Function<T>(Future<T> Function() action) run;
+  final bool enabled;
 
   @override
-  bool updateShouldNotify(_TrustedInterruptionScope oldWidget) => false;
+  bool updateShouldNotify(_TrustedInterruptionScope oldWidget) =>
+      enabled != oldWidget.enabled;
 }
 
 class _PinKey extends StatelessWidget {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../l10n/ritual_i18n.dart';
 import '../models/meal_entry.dart';
 import '../utils/journal_days.dart';
 import 'day_photo_collage.dart';
@@ -22,8 +23,17 @@ class DailyJournalCard extends StatelessWidget {
     final count = entries.length;
     return Semantics(
       button: true,
-      label:
-          '${DateFormat.yMMMMd().format(day)}, $count ${count == 1 ? 'moment' : 'moments'}',
+      label: tr(
+        '{date}, {moments}',
+        values: {
+          'date': DateFormat.yMMMMd(RitualI18n.localeName).format(day),
+          'moments': trPlural(
+            count,
+            one: '{count} moment',
+            other: '{count} moments',
+          ),
+        },
+      ),
       child: Card(
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
@@ -42,7 +52,9 @@ class DailyJournalCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            DateFormat('EEEE, MMMM d').format(day),
+                            DateFormat.MMMMEEEEd(
+                              RitualI18n.localeName,
+                            ).format(day),
                             style: Theme.of(context).textTheme.titleLarge
                                 ?.copyWith(fontWeight: FontWeight.w700),
                           ),
@@ -83,7 +95,11 @@ class DailyJournalCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            '$count ${count == 1 ? 'moment' : 'moments'}',
+                            trPlural(
+                              count,
+                              one: '{count} moment',
+                              other: '{count} moments',
+                            ),
                             style: Theme.of(context).textTheme.labelMedium
                                 ?.copyWith(
                                   color: Theme.of(context).colorScheme.primary,

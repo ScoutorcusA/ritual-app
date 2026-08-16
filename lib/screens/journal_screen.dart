@@ -4,7 +4,9 @@ import 'package:intl/intl.dart';
 import '../controllers/journal_controller.dart';
 import '../controllers/settings_controller.dart';
 import '../insights/insight_engine.dart';
+import '../l10n/ritual_i18n.dart';
 import '../models/meal_entry.dart';
+import '../models/personal_intention.dart';
 import '../theme/ritual_theme.dart';
 import '../utils/journal_days.dart';
 import '../utils/journal_summary.dart';
@@ -19,11 +21,13 @@ class JournalScreen extends StatelessWidget {
     required this.controller,
     required this.onSettings,
     this.settings,
+    this.onCapture,
   });
 
   final JournalController controller;
   final VoidCallback onSettings;
   final SettingsController? settings;
+  final VoidCallback? onCapture;
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +42,10 @@ class JournalScreen extends StatelessWidget {
         }
 
         final grouped = groupEntriesByDay(controller.entries);
-        final insights = InsightEngine.build(controller.entries);
+        final insights = InsightEngine.build(
+          controller.entries,
+          intention: settings?.personalIntention,
+        );
         return CustomScrollView(
           key: const PageStorageKey('journal-scroll'),
           slivers: [
@@ -47,6 +54,10 @@ class JournalScreen extends StatelessWidget {
                 controller: controller,
                 onSettings: onSettings,
                 showStreaks: settings?.streaksEnabled ?? true,
+                intention:
+                    settings?.personalIntention ??
+                    PersonalIntention.mindfulPause,
+                onCapture: onCapture,
               ),
             ),
             if (controller.entries.isEmpty)
@@ -95,11 +106,15 @@ class _JournalHeader extends StatelessWidget {
     required this.controller,
     required this.onSettings,
     required this.showStreaks,
+    required this.intention,
+    required this.onCapture,
   });
 
   final JournalController controller;
   final VoidCallback onSettings;
   final bool showStreaks;
+  final PersonalIntention intention;
+  final VoidCallback? onCapture;
 
   @override
   Widget build(BuildContext context) {
@@ -114,8 +129,8 @@ class _JournalHeader extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    DateFormat(
-                      'EEEE, MMMM d',
+                    DateFormat.MMMMEEEEd(
+                      RitualI18n.localeName,
                     ).format(DateTime.now()).toUpperCase(),
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       color: RitualColors.sage,
@@ -125,7 +140,7 @@ class _JournalHeader extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Share a reflection',
+                  tooltip: tr('Share a reflection'),
                   onPressed: controller.entries.isEmpty
                       ? null
                       : () => Navigator.of(context).push(
@@ -140,7 +155,7 @@ class _JournalHeader extends StatelessWidget {
                   icon: const Icon(Icons.ios_share_outlined),
                 ),
                 IconButton(
-                  tooltip: 'Settings',
+                  tooltip: tr('Settings'),
                   onPressed: onSettings,
                   icon: const Icon(Icons.settings_outlined),
                 ),
@@ -148,8 +163,14 @@ class _JournalHeader extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Your daily ritual',
+              tr('Your daily ritual'),
               style: Theme.of(context).textTheme.displaySmall,
+            ),
+            const SizedBox(height: 18),
+            _TodayActionCard(
+              entries: controller.entries,
+              intention: intention,
+              onCapture: onCapture,
             ),
             if (showStreaks) ...[
               const SizedBox(height: 20),
@@ -174,8 +195,11 @@ class _JournalHeader extends StatelessWidget {
                         Expanded(
                           child: Text(
                             controller.currentStreak == 0
-                                ? 'Begin with one mindful meal'
-                                : '${controller.currentStreak} day streak',
+                                ? tr('Begin with one mindful meal')
+                                : tr(
+                                    '{count} day streak',
+                                    values: {'count': controller.currentStreak},
+                                  ),
                             style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(
                                   color: RitualColors.paper,
@@ -184,7 +208,10 @@ class _JournalHeader extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          'Best ${controller.bestStreak}',
+                          tr(
+                            'Best {count}',
+                            values: {'count': controller.bestStreak},
+                          ),
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
                                 color: RitualColors.paper.withValues(
@@ -211,6 +238,80 @@ class _JournalHeader extends StatelessWidget {
   }
 }
 
+class _TodayActionCard extends StatelessWidget {
+  const _TodayActionCard({
+    required this.entries,
+    required this.intention,
+    required this.onCapture,
+  });
+
+  final List<MealEntry> entries;
+  final PersonalIntention intention;
+  final VoidCallback? onCapture;
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final todayCount = entries
+        .where(
+          (entry) =>
+              entry.createdAt.year == now.year &&
+              entry.createdAt.month == now.month &&
+              entry.createdAt.day == now.day,
+        )
+        .length;
+    final complete = todayCount > 0;
+    return Card(
+      margin: EdgeInsets.zero,
+      color: RitualColors.sage.withValues(alpha: 0.12),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              complete ? Icons.check_circle_outline : Icons.today_outlined,
+              color: RitualColors.sage,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    complete
+                        ? tr('Today is recorded')
+                        : tr('One moment for today'),
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    complete
+                        ? trPlural(
+                            todayCount,
+                            one: '{count} moment saved today.',
+                            other: '{count} moments saved today.',
+                          )
+                        : intention.todayPrompt,
+                  ),
+                  if (!complete && onCapture != null) ...[
+                    const SizedBox(height: 12),
+                    FilledButton.icon(
+                      onPressed: onCapture,
+                      icon: const Icon(Icons.add_a_photo_outlined),
+                      label: Text(tr('Save today’s first moment')),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _StreakWeek extends StatelessWidget {
   const _StreakWeek({required this.entries});
 
@@ -230,13 +331,14 @@ class _StreakWeek extends StatelessWidget {
           ),
         )
         .toSet();
-    const names = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         for (var index = 0; index < 7; index++)
           _StreakDay(
-            label: names[index],
+            label: DateFormat.E(
+              RitualI18n.localeName,
+            ).format(monday.add(Duration(days: index))).characters.first,
             date: monday.add(Duration(days: index)),
             today: today,
             complete: loggedDays.contains(monday.add(Duration(days: index))),
@@ -265,8 +367,13 @@ class _StreakDay extends StatelessWidget {
     final isFuture = date.isAfter(today);
     final muted = RitualColors.paper.withValues(alpha: isFuture ? 0.3 : 0.62);
     return Semantics(
-      label:
-          '${DateFormat.EEEE().format(date)}, ${complete ? 'logged' : 'not logged'}',
+      label: tr(
+        '{weekday}, {status}',
+        values: {
+          'weekday': DateFormat.EEEE(RitualI18n.localeName).format(date),
+          'status': complete ? tr('logged') : tr('not logged'),
+        },
+      ),
       child: Column(
         children: [
           Text(
@@ -321,15 +428,15 @@ class _JournalSummaryCard extends StatelessWidget {
           children: [
             _SummaryMetric(
               value: '${summary.totalEntries}',
-              label: 'Total moments',
+              label: tr('Total moments'),
             ),
             _SummaryMetric(
               value: summary.mealsPerLoggedDay.toStringAsFixed(1),
-              label: 'Per logged day',
+              label: tr('Per logged day'),
             ),
             _SummaryMetric(
-              value: summary.commonFeelingLabel,
-              label: 'Common feeling',
+              value: tr(summary.commonFeelingLabel),
+              label: tr('Common feeling'),
             ),
           ],
         ),
@@ -390,12 +497,14 @@ class _EmptyJournal extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            'Notice what nourishes you',
+            tr('Notice what nourishes you'),
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 10),
           Text(
-            'Photograph a meal, name how it felt, and let the days gather here.',
+            tr(
+              'Photograph a meal, name how it felt, and let the days gather here.',
+            ),
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyLarge,
           ),

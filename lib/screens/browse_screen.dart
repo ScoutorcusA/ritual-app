@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../controllers/journal_controller.dart';
 import '../controllers/settings_controller.dart';
+import '../l10n/ritual_i18n.dart';
 import '../models/meal_entry.dart';
 import '../theme/ritual_theme.dart';
 import '../utils/journal_days.dart';
@@ -77,10 +78,10 @@ class _BrowseScreenState extends State<BrowseScreen> {
 
   List<Widget> _gallerySlivers(List<MealEntry> entries) {
     if (entries.isEmpty) {
-      return const [
+      return [
         SliverFillRemaining(
           hasScrollBody: false,
-          child: Center(child: Text('No moments match these filters.')),
+          child: Center(child: Text(tr('No moments match these filters.'))),
         ),
       ];
     }
@@ -196,26 +197,26 @@ class _BrowseHeader extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Browse', style: Theme.of(context).textTheme.displaySmall),
+            Text(tr('Browse'), style: Theme.of(context).textTheme.displaySmall),
             const SizedBox(height: 6),
             Text(
-              '$count ${count == 1 ? 'moment' : 'moments'}',
+              trPlural(count, one: '{count} moment', other: '{count} moments'),
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const SizedBox(height: 18),
             SizedBox(
               width: double.infinity,
               child: SegmentedButton<BrowseView>(
-                segments: const [
+                segments: [
                   ButtonSegment(
                     value: BrowseView.gallery,
-                    icon: Icon(Icons.grid_view_rounded),
-                    label: Text('Gallery'),
+                    icon: const Icon(Icons.grid_view_rounded),
+                    label: Text(tr('Gallery')),
                   ),
                   ButtonSegment(
                     value: BrowseView.calendar,
-                    icon: Icon(Icons.calendar_month_outlined),
-                    label: Text('Calendar'),
+                    icon: const Icon(Icons.calendar_month_outlined),
+                    label: Text(tr('Calendar')),
                   ),
                 ],
                 selected: {view},
@@ -231,7 +232,7 @@ class _BrowseHeader extends StatelessWidget {
                   scrollDirection: Axis.horizontal,
                   children: [
                     _FilterChip(
-                      label: 'All',
+                      label: tr('All'),
                       selected: filter == null,
                       onSelected: () => onMealFilterChanged(null),
                     ),
@@ -248,18 +249,21 @@ class _BrowseHeader extends StatelessWidget {
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String?>(
                   initialValue: feelingFilter,
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.mood_outlined),
-                    labelText: 'Feeling',
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16),
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.mood_outlined),
+                    labelText: tr('Feeling'),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                   ),
                   items: [
-                    const DropdownMenuItem(
+                    DropdownMenuItem(
                       value: null,
-                      child: Text('Any feeling'),
+                      child: Text(tr('Any feeling')),
                     ),
                     for (final feeling in feelingLabels)
-                      DropdownMenuItem(value: feeling, child: Text(feeling)),
+                      DropdownMenuItem(
+                        value: feeling,
+                        child: Text(tr(feeling)),
+                      ),
                   ],
                   onChanged: onFeelingFilterChanged,
                 ),
@@ -398,7 +402,7 @@ class _MonthCalendar extends StatelessWidget {
                 borderRadius: BorderRadius.circular(99),
               ),
               child: Text(
-                DateFormat.yMMMM().format(month),
+                DateFormat.yMMMM(RitualI18n.localeName).format(month),
                 style: Theme.of(
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
@@ -407,10 +411,12 @@ class _MonthCalendar extends StatelessWidget {
             const SizedBox(height: 22),
             Row(
               children: [
-                for (final weekday in const ['S', 'M', 'T', 'W', 'T', 'F', 'S'])
+                for (var weekday = 0; weekday < 7; weekday++)
                   Expanded(
                     child: Text(
-                      weekday,
+                      DateFormat.E(
+                        RitualI18n.localeName,
+                      ).format(DateTime(2024, 1, 7 + weekday)).characters.first,
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.labelLarge,
                     ),
@@ -526,8 +532,17 @@ class _CalendarDay extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     return Semantics(
       button: hasEntries,
-      label:
-          '${DateFormat.yMMMMd().format(day)}, ${entries.length} ${entries.length == 1 ? 'moment' : 'moments'}',
+      label: tr(
+        '{date}, {moments}',
+        values: {
+          'date': DateFormat.yMMMMd(RitualI18n.localeName).format(day),
+          'moments': trPlural(
+            entries.length,
+            one: '{count} moment',
+            other: '{count} moments',
+          ),
+        },
+      ),
       child: Material(
         color: expanded
             ? RitualColors.honey.withValues(alpha: 0.16)
@@ -642,7 +657,7 @@ class _ExpandedCalendarDay extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Text(
-                  DateFormat('EEEE, MMMM d').format(day),
+                  DateFormat.MMMMEEEEd(RitualI18n.localeName).format(day),
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
@@ -665,9 +680,11 @@ class _ExpandedCalendarDay extends StatelessWidget {
                   title: Text(entry.mealType.label),
                   subtitle: Text(
                     [
-                      DateFormat.jm().format(entry.createdAt),
+                      DateFormat.jm(
+                        RitualI18n.localeName,
+                      ).format(entry.createdAt),
                       if (entry.feelings.isNotEmpty)
-                        entry.feelings.take(2).join(' · '),
+                        entry.feelings.take(2).map(tr).join(' · '),
                     ].join('  •  '),
                   ),
                   trailing: const Icon(Icons.chevron_right_rounded),

@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 
+import '../l10n/ritual_i18n.dart';
 import 'meal_entry.dart';
 
 enum JournalExportFormat { pdf, csv }
@@ -48,14 +49,34 @@ class JournalExportRange {
 
   String get displayLabel {
     if (start == end) {
-      return DateFormat.yMMMd().format(start);
+      return DateFormat.yMMMd(RitualI18n.localeName).format(start);
     }
     if (start.year == end.year && start.month == end.month) {
-      return '${DateFormat.MMMd().format(start)}–${DateFormat.d().format(end)}, ${end.year}';
+      return tr(
+        '{start}–{end}, {year}',
+        values: {
+          'start': DateFormat.MMMd(RitualI18n.localeName).format(start),
+          'end': DateFormat.d(RitualI18n.localeName).format(end),
+          'year': end.year,
+        },
+      );
     }
     if (start.year == end.year) {
-      return '${DateFormat.MMMd().format(start)}–${DateFormat.MMMd().format(end)}, ${end.year}';
+      return tr(
+        '{start}–{end}, {year}',
+        values: {
+          'start': DateFormat.MMMd(RitualI18n.localeName).format(start),
+          'end': DateFormat.MMMd(RitualI18n.localeName).format(end),
+          'year': end.year,
+        },
+      );
     }
-    return '${DateFormat.yMMMd().format(start)}–${DateFormat.yMMMd().format(end)}';
+    return tr(
+      '{start}–{end}',
+      values: {
+        'start': DateFormat.yMMMd(RitualI18n.localeName).format(start),
+        'end': DateFormat.yMMMd(RitualI18n.localeName).format(end),
+      },
+    );
   }
 }

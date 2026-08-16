@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ritual/controllers/settings_controller.dart';
 import 'package:ritual/models/meal_entry.dart';
+import 'package:ritual/models/personal_intention.dart';
 import 'package:ritual/services/meal_reminder_service.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
@@ -105,12 +108,37 @@ void main() {
     expect(reloaded.reminderSchedule.dinnerMinutes, 20 * 60 + 5);
     expect(reloaded.onboardingComplete, isTrue);
   });
+
+  test('personal intention and adaptive reminder choices persist', () async {
+    final settings = SettingsController();
+    await settings.initialize();
+
+    await settings.setPersonalIntention(PersonalIntention.understandFeelings);
+    await settings.dismissAdaptiveReminderSuggestion(
+      MealReminderKind.lunch,
+      13 * 60 + 55,
+    );
+    await settings.skipRemindersToday(DateTime(2026, 8, 16, 18));
+
+    final reloaded = SettingsController();
+    await reloaded.initialize();
+    expect(reloaded.personalIntention, PersonalIntention.understandFeelings);
+    expect(
+      reloaded.dismissedAdaptiveTime(MealReminderKind.lunch),
+      13 * 60 + 55,
+    );
+    expect(reloaded.remindersSkippedDay, DateTime(2026, 8, 16));
+  });
 }
 
 class _FakeReminderScheduler implements MealReminderScheduler {
   _FakeReminderScheduler({required this.permission});
 
   ReminderPermissionStatus permission;
+
+  @override
+  Stream<MealReminderResponse> get responses =>
+      const Stream<MealReminderResponse>.empty();
 
   @override
   Future<void> initialize() async {}
@@ -126,6 +154,17 @@ class _FakeReminderScheduler implements MealReminderScheduler {
     required List<MealEntry> entries,
     required bool enabled,
     ReminderSchedule schedule = const ReminderSchedule(),
+    PersonalIntention intention = PersonalIntention.mindfulPause,
+    DateTime? skippedDay,
+  }) async {}
+
+  @override
+  Future<MealReminderResponse?> takeInitialResponse() async => null;
+
+  @override
+  Future<void> snooze(
+    MealReminderKind kind, {
+    PersonalIntention intention = PersonalIntention.mindfulPause,
   }) async {}
 
   @override

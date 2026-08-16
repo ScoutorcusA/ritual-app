@@ -7,6 +7,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../l10n/ritual_i18n.dart';
+import '../models/personal_intention.dart';
 import '../services/meal_reminder_service.dart';
 
 enum AppLockMode { off, device, pin }
@@ -39,6 +41,9 @@ class SettingsController extends ChangeNotifier {
   static const _lunchReminderKey = 'lunch_reminder_minutes';
   static const _dinnerReminderKey = 'dinner_reminder_minutes';
   static const _emptyDayReminderKey = 'empty_day_reminder_minutes';
+  static const _personalIntentionKey = 'personal_intention';
+  static const _skippedReminderDayKey = 'skipped_reminder_day';
+  static const _adaptiveDismissedPrefix = 'adaptive_reminder_dismissed_';
   static const _hashRounds = 50000;
 
   final SharedPreferencesAsync _preferences;
@@ -55,6 +60,9 @@ class SettingsController extends ChangeNotifier {
   bool _cravingScaleEnabled = false;
   bool _onboardingComplete = false;
   ReminderSchedule _reminderSchedule = const ReminderSchedule();
+  PersonalIntention _personalIntention = PersonalIntention.mindfulPause;
+  DateTime? _remindersSkippedDay;
+  final Map<MealReminderKind, int> _dismissedAdaptiveTimes = {};
 
   ThemeMode get themeMode => _themeMode;
   AppLockMode get lockMode => _lockMode;
@@ -66,6 +74,8 @@ class SettingsController extends ChangeNotifier {
   bool get cravingScaleEnabled => _cravingScaleEnabled;
   bool get onboardingComplete => _onboardingComplete;
   ReminderSchedule get reminderSchedule => _reminderSchedule;
+  PersonalIntention get personalIntention => _personalIntention;
+  DateTime? get remindersSkippedDay => _remindersSkippedDay;
 
   Future<void> initialize() async {
     final storedTheme = await _preferences.getString(_themeKey);
@@ -108,6 +118,27 @@ class SettingsController extends ChangeNotifier {
       emptyDayMinutes:
           await _preferences.getInt(_emptyDayReminderKey) ?? 21 * 60 + 30,
     );
+    final storedIntention = await _preferences.getString(_personalIntentionKey);
+    final migratedIntention = storedIntention == 'prepareForClinician'
+        ? PersonalIntention.noticeJournalPatterns.name
+        : storedIntention;
+    _personalIntention =
+        PersonalIntention.values
+            .where((value) => value.name == migratedIntention)
+            .firstOrNull ??
+        PersonalIntention.mindfulPause;
+    if (storedIntention != null && storedIntention != migratedIntention) {
+      await _preferences.setString(_personalIntentionKey, migratedIntention!);
+    }
+    _remindersSkippedDay = _parseDay(
+      await _preferences.getString(_skippedReminderDayKey),
+    );
+    for (final kind in MealReminderKind.values) {
+      final value = await _preferences.getInt(
+        '$_adaptiveDismissedPrefix${kind.name}',
+      );
+      if (value != null) _dismissedAdaptiveTimes[kind] = value;
+    }
   }
 
   Future<void> setThemeMode(ThemeMode value) async {
@@ -123,7 +154,7 @@ class SettingsController extends ChangeNotifier {
   Future<bool> authenticateDevice() async {
     try {
       return await _localAuthentication.authenticate(
-        localizedReason: 'Unlock your private Ritual journal',
+        localizedReason: tr('Unlock your private Ritual journal'),
         persistAcrossBackgrounding: true,
       );
     } on LocalAuthException {
@@ -144,7 +175,7 @@ class SettingsController extends ChangeNotifier {
 
   Future<void> setPin(String pin) async {
     if (!RegExp(r'^\d{4}$').hasMatch(pin)) {
-      throw const FormatException('PIN must contain exactly four digits.');
+      throw FormatException(tr('PIN must contain exactly four digits.'));
     }
     final random = Random.secure();
     final saltBytes = List<int>.generate(16, (_) => random.nextInt(256));
@@ -205,7 +236,7 @@ class SettingsController extends ChangeNotifier {
 
   Future<void> setReminderTime(MealReminderKind kind, int minutes) async {
     if (minutes < 0 || minutes >= 24 * 60) {
-      throw const FormatException('Reminder time must be within one day.');
+      throw FormatException(tr('Reminder time must be within one day.'));
     }
     final current = _reminderSchedule;
     _reminderSchedule = ReminderSchedule(
@@ -230,6 +261,39 @@ class SettingsController extends ChangeNotifier {
       MealReminderKind.emptyDay => _emptyDayReminderKey,
     };
     await _preferences.setInt(key, minutes);
+    _dismissedAdaptiveTimes.remove(kind);
+    await _preferences.remove('$_adaptiveDismissedPrefix${kind.name}');
+  }
+
+  Future<void> setPersonalIntention(PersonalIntention value) async {
+    if (_personalIntention == value) return;
+    _personalIntention = value;
+    notifyListeners();
+    await _preferences.setString(_personalIntentionKey, value.name);
+  }
+
+  int? dismissedAdaptiveTime(MealReminderKind kind) =>
+      _dismissedAdaptiveTimes[kind];
+
+  Future<void> dismissAdaptiveReminderSuggestion(
+    MealReminderKind kind,
+    int suggestedMinutes,
+  ) async {
+    _dismissedAdaptiveTimes[kind] = suggestedMinutes;
+    await _preferences.setInt(
+      '$_adaptiveDismissedPrefix${kind.name}',
+      suggestedMinutes,
+    );
+  }
+
+  Future<void> skipRemindersToday([DateTime? now]) async {
+    final value = now ?? DateTime.now();
+    _remindersSkippedDay = DateTime(value.year, value.month, value.day);
+    notifyListeners();
+    await _preferences.setString(
+      _skippedReminderDayKey,
+      _formatDay(_remindersSkippedDay!),
+    );
   }
 
   Future<void> completeOnboarding() async {
@@ -279,5 +343,18 @@ class SettingsController extends ChangeNotifier {
       digest = sha256.convert([...digest, ...utf8.encode(salt)]).bytes;
     }
     return base64UrlEncode(digest);
+  }
+
+  static String _formatDay(DateTime value) =>
+      '${value.year.toString().padLeft(4, '0')}-'
+      '${value.month.toString().padLeft(2, '0')}-'
+      '${value.day.toString().padLeft(2, '0')}';
+
+  static DateTime? _parseDay(String? value) {
+    if (value == null) return null;
+    final parsed = DateTime.tryParse(value);
+    return parsed == null
+        ? null
+        : DateTime(parsed.year, parsed.month, parsed.day);
   }
 }

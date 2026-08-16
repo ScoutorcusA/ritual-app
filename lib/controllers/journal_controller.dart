@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../data/meal_repository.dart';
+import '../l10n/ritual_i18n.dart';
 import '../models/meal_entry.dart';
 import '../utils/streak_calculator.dart';
 
@@ -39,7 +40,10 @@ class JournalController extends ChangeNotifier {
       await _syncDailyHighlights();
       await _recalculateStreak();
     } catch (error) {
-      _error = 'Your journal could not be opened. $error';
+      _error = tr(
+        'Your journal could not be opened. {error}',
+        values: {'error': error},
+      );
     } finally {
       _loading = false;
       notifyListeners();

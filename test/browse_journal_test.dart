@@ -52,7 +52,10 @@ void main() {
     expect(find.text('Per logged day'), findsOneWidget);
     expect(find.text('Common feeling'), findsOneWidget);
 
-    await tester.tap(find.text(DateFormat('EEEE, MMMM d').format(now)));
+    final dayTitle = find.text(DateFormat('EEEE, MMMM d').format(now));
+    await tester.scrollUntilVisible(dayTitle, 300);
+    final titleRect = tester.getRect(dayTitle);
+    await tester.tapAt(Offset(40, titleRect.center.dy));
     await tester.pumpAndSettle();
     expect(find.text('Breakfast'), findsOneWidget);
     await tester.scrollUntilVisible(

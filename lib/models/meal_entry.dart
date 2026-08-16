@@ -1,18 +1,20 @@
+import '../l10n/ritual_i18n.dart';
+
 enum MealType { breakfast, lunch, dinner, snack }
 
 extension MealTypeLabel on MealType {
   String get label => switch (this) {
-    MealType.breakfast => 'Breakfast',
-    MealType.lunch => 'Lunch',
-    MealType.dinner => 'Dinner',
-    MealType.snack => 'Snack',
+    MealType.breakfast => tr('Breakfast'),
+    MealType.lunch => tr('Lunch'),
+    MealType.dinner => tr('Dinner'),
+    MealType.snack => tr('Snack'),
   };
 
   String get prompt => switch (this) {
-    MealType.breakfast => 'A gentle start',
-    MealType.lunch => 'A midday pause',
-    MealType.dinner => 'The day at your table',
-    MealType.snack => 'A little moment',
+    MealType.breakfast => tr('A gentle start'),
+    MealType.lunch => tr('A midday pause'),
+    MealType.dinner => tr('The day at your table'),
+    MealType.snack => tr('A little moment'),
   };
 }
 

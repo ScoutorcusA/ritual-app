@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:intl/intl.dart';
 
+import '../l10n/ritual_i18n.dart';
 import '../models/journal_export.dart';
 import '../models/meal_entry.dart';
 
@@ -26,19 +27,19 @@ class JournalCsvService {
     final sorted = range.filter(entries)
       ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
     final rows = <List<_CsvCell>>[
-      const [
-        _CsvCell.text('Date'),
-        _CsvCell.text('Time'),
-        _CsvCell.text('Recorded at'),
-        _CsvCell.text('Meal type'),
-        _CsvCell.text('Feelings'),
-        _CsvCell.text('Reflection'),
-        _CsvCell.text('Place'),
-        _CsvCell.text('Latitude'),
-        _CsvCell.text('Longitude'),
-        _CsvCell.text('Hunger before (1-5)'),
-        _CsvCell.text('Craving before (1-5)'),
-        _CsvCell.text('Fullness after (1-5)'),
+      [
+        _CsvCell.text(tr('Date')),
+        _CsvCell.text(tr('Time')),
+        _CsvCell.text(tr('Recorded at')),
+        _CsvCell.text(tr('Meal type')),
+        _CsvCell.text(tr('Feelings')),
+        _CsvCell.text(tr('Reflection')),
+        _CsvCell.text(tr('Place')),
+        _CsvCell.text(tr('Latitude')),
+        _CsvCell.text(tr('Longitude')),
+        _CsvCell.text(tr('Hunger before (1-5)')),
+        _CsvCell.text(tr('Craving before (1-5)')),
+        _CsvCell.text(tr('Fullness after (1-5)')),
       ],
       for (final entry in sorted)
         [

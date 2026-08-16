@@ -1,4 +1,6 @@
+import '../l10n/ritual_i18n.dart';
 import '../models/meal_entry.dart';
+import '../models/personal_intention.dart';
 
 enum InsightKind { repetition, feeling, place, consistency }
 
@@ -17,7 +19,11 @@ class JournalInsight {
 }
 
 abstract final class InsightEngine {
-  static List<JournalInsight> build(List<MealEntry> entries, {DateTime? now}) {
+  static List<JournalInsight> build(
+    List<MealEntry> entries, {
+    DateTime? now,
+    PersonalIntention? intention,
+  }) {
     if (entries.isEmpty) return const [];
     final ordered = [...entries]
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -35,10 +41,14 @@ abstract final class InsightEngine {
         JournalInsight(
           id: 'run-${recentType.name}-$sameTypeRun',
           kind: InsightKind.repetition,
-          title: 'A pattern is taking shape',
-          message:
-              'Your last $sameTypeRun entries have all been '
-              '${recentType.label.toLowerCase()}.',
+          title: tr('A pattern is taking shape'),
+          message: tr(
+            'Your last {count} entries have all been {mealType}.',
+            values: {
+              'count': sameTypeRun,
+              'mealType': recentType.label.toLowerCase(),
+            },
+          ),
         ),
       );
     }
@@ -69,10 +79,15 @@ abstract final class InsightEngine {
         JournalInsight(
           id: 'feeling-${type.name}-${feeling.toLowerCase()}-$count',
           kind: InsightKind.feeling,
-          title: 'You noticed how it felt',
-          message:
-              '${type.label} felt ${feeling.toLowerCase()} on $count days '
-              'this past week.',
+          title: tr('You noticed how it felt'),
+          message: tr(
+            '{mealType} felt {feeling} on {count} days this past week.',
+            values: {
+              'mealType': type.label,
+              'feeling': tr(feeling).toLowerCase(),
+              'count': count,
+            },
+          ),
         ),
       );
     }
@@ -109,10 +124,15 @@ abstract final class InsightEngine {
         JournalInsight(
           id: 'place-${type.name}-${label.toLowerCase()}-$count',
           kind: InsightKind.place,
-          title: 'A familiar place',
-          message:
-              'You had ${type.label.toLowerCase()} in $label on $count days '
-              'this past month.',
+          title: tr('A familiar place'),
+          message: tr(
+            'You had {mealType} in {place} on {count} days this past month.',
+            values: {
+              'mealType': type.label.toLowerCase(),
+              'place': label,
+              'count': count,
+            },
+          ),
         ),
       );
     }
@@ -127,9 +147,23 @@ abstract final class InsightEngine {
         JournalInsight(
           id: 'consistency-$journalDays',
           kind: InsightKind.consistency,
-          title: 'Days worth remembering',
-          message:
-              'You paused to notice a meal on $journalDays days this week.',
+          title: tr('Days worth remembering'),
+          message: tr(
+            'You paused to notice a meal on {count} days this week.',
+            values: {'count': journalDays},
+          ),
+        ),
+      );
+    }
+    if (insights.isNotEmpty && intention != null) {
+      final first = insights.first;
+      insights[0] = JournalInsight(
+        id: first.id,
+        kind: first.kind,
+        title: first.title,
+        message: tr(
+          '{insight} {nudge}',
+          values: {'insight': first.message, 'nudge': intention.insightNudge},
         ),
       );
     }

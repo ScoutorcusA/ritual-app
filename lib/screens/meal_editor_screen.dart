@@ -7,7 +7,9 @@ import 'package:geolocator_platform_interface/geolocator_platform_interface.dart
 
 import '../controllers/journal_controller.dart';
 import '../controllers/settings_controller.dart';
+import '../l10n/ritual_i18n.dart';
 import '../models/meal_entry.dart';
+import '../models/personal_intention.dart';
 import '../services/city_geocoder.dart';
 import '../services/debug_log_service.dart';
 import '../theme/ritual_theme.dart';
@@ -20,12 +22,14 @@ class MealEditorScreen extends StatefulWidget {
     required this.imagePath,
     this.entry,
     this.settings,
+    this.initialMealType,
   });
 
   final JournalController controller;
   final String imagePath;
   final MealEntry? entry;
   final SettingsController? settings;
+  final MealType? initialMealType;
 
   bool get editing => entry != null;
 
@@ -53,7 +57,8 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
   void initState() {
     super.initState();
     final entry = widget.entry;
-    _mealType = entry?.mealType ?? _suggestedMealType();
+    _mealType =
+        entry?.mealType ?? widget.initialMealType ?? _suggestedMealType();
     _feelings = {...?entry?.feelings};
     _noteController = TextEditingController(text: entry?.note ?? '');
     _latitude = entry?.latitude;
@@ -85,8 +90,8 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
     setState(() {
       _findingLocation = true;
       _locationMessage = useDirectProvider
-          ? 'Trying Android’s alternate location provider…'
-          : 'Finding your approximate location…';
+          ? tr('Trying Android’s alternate location provider…')
+          : tr('Finding your approximate location…');
     });
     unawaited(
       DebugLogService.instance.record(
@@ -100,20 +105,20 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
         unawaited(
           DebugLogService.instance.record('location', 'services disabled'),
         );
-        throw const _LocationIssue(
-          'Turn on Location Services, then try again.',
-        );
+        throw _LocationIssue(tr('Turn on Location Services, then try again.'));
       }
       var permission = await geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await geolocator.requestPermission();
       }
       if (permission == LocationPermission.denied) {
-        throw const _LocationIssue('Location permission was not granted.');
+        throw _LocationIssue(tr('Location permission was not granted.'));
       }
       if (permission == LocationPermission.deniedForever) {
-        throw const _LocationIssue(
-          'Location is blocked for Ritual. You can enable it in Android settings.',
+        throw _LocationIssue(
+          tr(
+            'Location is blocked for Ritual. You can enable it in Android settings.',
+          ),
         );
       }
       unawaited(
@@ -155,9 +160,10 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
           ),
         );
         if (lastKnown == null) {
-          throw const _LocationIssue(
-            'Android did not find a location within 30 seconds. Try near a '
-            'window, or confirm that Location is on in Android settings.',
+          throw _LocationIssue(
+            tr(
+              'Android did not find a location within 30 seconds. Try near a window, or confirm that Location is on in Android settings.',
+            ),
           );
         }
         position = lastKnown;
@@ -195,15 +201,19 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
           ),
         );
         throw _LocationIssue(
-          '${error.message} Enter your city manually, or try again later.',
+          tr(
+            '{error} Enter your city manually, or try again later.',
+            values: {'error': error.message},
+          ),
         );
       } on TimeoutException {
         unawaited(
           DebugLogService.instance.record('location', 'city lookup timed out'),
         );
-        throw const _LocationIssue(
-          'Android’s place-name service did not respond. Enter your city '
-          'manually, or try again later.',
+        throw _LocationIssue(
+          tr(
+            'Android’s place-name service did not respond. Enter your city manually, or try again later.',
+          ),
         );
       }
     } on _LocationIssue catch (error) {
@@ -216,14 +226,18 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
         DebugLogService.instance.record('location', 'services disabled'),
       );
       if (mounted) {
-        setState(() => _locationMessage = 'Android Location Services are off.');
+        setState(
+          () => _locationMessage = tr('Android Location Services are off.'),
+        );
       }
     } on PermissionDeniedException {
       unawaited(
         DebugLogService.instance.record('location', 'permission denied'),
       );
       if (mounted) {
-        setState(() => _locationMessage = 'Android denied location access.');
+        setState(
+          () => _locationMessage = tr('Android denied location access.'),
+        );
       }
     } on PlatformException catch (error) {
       unawaited(
@@ -234,8 +248,10 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
       );
       if (mounted) {
         setState(
-          () => _locationMessage =
-              'Android could not provide a location (${error.code}).',
+          () => _locationMessage = tr(
+            'Android could not provide a location ({code}).',
+            values: {'code': error.code},
+          ),
         );
       }
     } catch (error) {
@@ -247,8 +263,10 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
       );
       if (mounted) {
         setState(
-          () => _locationMessage =
-              'Your location could not be added right now (${error.runtimeType}).',
+          () => _locationMessage = tr(
+            'Your location could not be added right now ({errorType}).',
+            values: {'errorType': error.runtimeType},
+          ),
         );
       }
     } finally {
@@ -261,15 +279,15 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
     final place = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Enter a place'),
+        title: Text(tr('Enter a place')),
         content: TextField(
           controller: controller,
           autofocus: true,
           maxLength: 80,
           textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(
-            labelText: 'Place name',
-            hintText: 'Columbus, United States…',
+          decoration: InputDecoration(
+            labelText: tr('Place name'),
+            hintText: tr('Columbus, United States…'),
           ),
           onSubmitted: (value) {
             final trimmed = value.trim();
@@ -279,14 +297,14 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(tr('Cancel')),
           ),
           FilledButton(
             onPressed: () {
               final trimmed = controller.text.trim();
               if (trimmed.isNotEmpty) Navigator.pop(context, trimmed);
             },
-            child: const Text('Use place'),
+            child: Text(tr('Use place')),
           ),
         ],
       ),
@@ -343,8 +361,10 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('This moment could not be saved. Please try again.'),
+        SnackBar(
+          content: Text(
+            tr('This moment could not be saved. Please try again.'),
+          ),
         ),
       );
     }
@@ -356,7 +376,7 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
     final dark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.editing ? 'Edit moment' : 'New moment'),
+        title: Text(widget.editing ? tr('Edit moment') : tr('New moment')),
         actions: [
           TextButton(
             onPressed: _saving ? null : _save,
@@ -365,7 +385,7 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
                     dimension: 18,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Save'),
+                : Text(tr('Save')),
           ),
           const SizedBox(width: 8),
         ],
@@ -378,7 +398,10 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
             child: MealPhoto(path: widget.imagePath),
           ),
           const SizedBox(height: 28),
-          Text('What was this?', style: Theme.of(context).textTheme.titleLarge),
+          Text(
+            tr('What was this?'),
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
@@ -410,9 +433,9 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
           const SizedBox(height: 28),
           if (widget.settings?.hungerScaleEnabled ?? false) ...[
             _ReflectionScale(
-              title: 'How hungry were you before?',
-              lowLabel: 'Not hungry',
-              highLabel: 'Very hungry',
+              title: tr('How hungry were you before?'),
+              lowLabel: tr('Not hungry'),
+              highLabel: tr('Very hungry'),
               value: _hungerLevel,
               onChanged: (value) => setState(() => _hungerLevel = value),
             ),
@@ -420,20 +443,20 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
           ],
           if (widget.settings?.cravingScaleEnabled ?? false) ...[
             _ReflectionScale(
-              title: 'How strong was the craving?',
-              lowLabel: 'No craving',
-              highLabel: 'Very strong',
+              title: tr('How strong was the craving?'),
+              lowLabel: tr('No craving'),
+              highLabel: tr('Very strong'),
               value: _cravingLevel,
               onChanged: (value) => setState(() => _cravingLevel = value),
             ),
             const SizedBox(height: 24),
           ],
           Text(
-            'How did it feel?',
+            tr('How did it feel?'),
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 4),
-          Text('Choose any that fit. This is noticing, not scoring.'),
+          Text(tr('Choose any that fit. This is noticing, not scoring.')),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
@@ -441,7 +464,7 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
             children: [
               for (final feeling in feelingLabels)
                 FilterChip(
-                  label: Text(feeling),
+                  label: Text(tr(feeling)),
                   selected: _feelings.contains(feeling),
                   showCheckmark: false,
                   selectedColor: RitualColors.sage.withValues(alpha: 0.25),
@@ -462,31 +485,32 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
           const SizedBox(height: 28),
           if (widget.settings?.fullnessScaleEnabled ?? false) ...[
             _ReflectionScale(
-              title: 'How full did you feel afterwards?',
-              lowLabel: 'Still hungry',
-              highLabel: 'Very full',
+              title: tr('How full did you feel afterwards?'),
+              lowLabel: tr('Still hungry'),
+              highLabel: tr('Very full'),
               value: _fullnessLevel,
               onChanged: (value) => setState(() => _fullnessLevel = value),
             ),
             const SizedBox(height: 28),
           ],
           Text(
-            'A note, if you want',
+            tr('A note, if you want'),
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _noteController,
             minLines: 3,
-            maxLines: 6,
-            maxLength: 280,
+            maxLines: null,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              hintText: 'What do you want to remember about this meal?',
+            decoration: InputDecoration(
+              hintText:
+                  widget.settings?.personalIntention.reflectionHint ??
+                  tr('What do you want to remember about this meal?'),
             ),
           ),
           const SizedBox(height: 20),
-          Text('Place', style: Theme.of(context).textTheme.titleLarge),
+          Text(tr('Place'), style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 10),
           if (_locationLabel != null ||
               (_latitude != null && _longitude != null))
@@ -511,7 +535,7 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Remove location',
+                    tooltip: tr('Remove location'),
                     onPressed: () => setState(() {
                       _latitude = null;
                       _longitude = null;
@@ -538,15 +562,15 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
                     : const Icon(Icons.my_location_outlined),
                 label: Text(
                   _locationLabel == null && _latitude == null
-                      ? 'Use approximate location'
-                      : 'Refresh location',
+                      ? tr('Use approximate location')
+                      : tr('Refresh location'),
                 ),
               ),
               OutlinedButton.icon(
                 onPressed: _findingLocation ? null : _enterPlaceManually,
                 icon: const Icon(Icons.edit_location_alt_outlined),
                 label: Text(
-                  _locationLabel == null ? 'Enter place' : 'Edit place',
+                  _locationLabel == null ? tr('Enter place') : tr('Edit place'),
                 ),
               ),
             ],
@@ -572,7 +596,9 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
           FilledButton.icon(
             onPressed: _saving ? null : _save,
             icon: const Icon(Icons.check_rounded),
-            label: Text(widget.editing ? 'Save changes' : 'Keep this moment'),
+            label: Text(
+              widget.editing ? tr('Save changes') : tr('Keep this moment'),
+            ),
             style: FilledButton.styleFrom(
               minimumSize: const Size.fromHeight(54),
               shape: RoundedRectangleBorder(
@@ -620,7 +646,7 @@ class _ReflectionScale extends StatelessWidget {
             if (value != null)
               TextButton(
                 onPressed: () => onChanged(null),
-                child: const Text('Clear'),
+                child: Text(tr('Clear')),
               ),
           ],
         ),
@@ -631,7 +657,10 @@ class _ReflectionScale extends StatelessWidget {
               if (level > 1) const SizedBox(width: 8),
               Expanded(
                 child: Semantics(
-                  label: '$title $level of 5',
+                  label: tr(
+                    '{title} {level} of 5',
+                    values: {'title': title, 'level': level},
+                  ),
                   selected: value == level,
                   child: InkWell(
                     borderRadius: BorderRadius.circular(14),
@@ -682,7 +711,7 @@ class _ReflectionScale extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(
-          'Optional - choose what feels closest.',
+          tr('Optional - choose what feels closest.'),
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ritual/controllers/settings_controller.dart';
+import 'package:ritual/models/personal_intention.dart';
 import 'package:ritual/screens/welcome_screen.dart';
 import 'package:ritual/theme/ritual_theme.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
@@ -30,6 +31,13 @@ void main() {
     );
 
     expect(find.text('Notice, without judgment'), findsOneWidget);
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(find.text('What should Ritual support?'), findsOneWidget);
+
+    await tester.tap(find.text('Notice hunger and fullness'));
+    await tester.pump();
+    expect(settings.personalIntention, PersonalIntention.noticeHungerFullness);
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
     expect(find.text('Make it feel like yours'), findsOneWidget);

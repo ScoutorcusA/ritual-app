@@ -9,9 +9,13 @@ Entries are grouped by local calendar day. Each large day card contains:
 - a collage of up to four entries;
 - a short feelings summary.
 
+The Journal header begins with a Today card. Before the first entry, its single call to action and prompt follow the user's personal intention. After the first entry, it reports how many moments are recorded today.
+
 Tapping a day opens a dedicated daily journal with every entry from that day. Above the day cards, the summary shows total moments, entries per logged day, and the feeling selected on the greatest number of entries. When no feelings have been recorded, common feeling displays a dash. Ties are resolved alphabetically so the result remains stable.
 
 Insight cards are inserted between daily cards in deterministic order. They describe correlations only; they do not diagnose health conditions or claim causation.
+
+When a personal intention is set, the first available insight includes a brief, intention-relevant next thought. The detected pattern and its underlying counts remain unchanged.
 
 ## Browse
 

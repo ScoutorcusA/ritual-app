@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../controllers/journal_controller.dart';
 import '../controllers/settings_controller.dart';
+import '../l10n/ritual_i18n.dart';
 import '../utils/journal_days.dart';
 import '../widgets/day_photo_collage.dart';
 import '../widgets/meal_card.dart';
@@ -29,9 +30,11 @@ class DailyJournalScreen extends StatelessWidget {
             .where((entry) => isSameDay(entry.createdAt, day))
             .toList(growable: false);
         return Scaffold(
-          appBar: AppBar(title: Text(DateFormat('MMMM d').format(day))),
+          appBar: AppBar(
+            title: Text(DateFormat.MMMMd(RitualI18n.localeName).format(day)),
+          ),
           body: entries.isEmpty
-              ? const Center(child: Text('This day has no moments now.'))
+              ? Center(child: Text(tr('This day has no moments now.')))
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(20, 4, 20, 40),
                   itemCount: entries.length + 1,
@@ -47,7 +50,9 @@ class DailyJournalScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 18),
                           Text(
-                            DateFormat('EEEE, MMMM d').format(day),
+                            DateFormat.MMMMEEEEd(
+                              RitualI18n.localeName,
+                            ).format(day),
                             style: Theme.of(context).textTheme.headlineMedium,
                           ),
                           const SizedBox(height: 5),

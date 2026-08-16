@@ -11,4 +11,5 @@
 - [[Export and Import]]
 - [[Architecture and Data]]
 - [[Development, Testing, and Releases]]
+- [[Translations and Languages]]
 - [[Troubleshooting]]

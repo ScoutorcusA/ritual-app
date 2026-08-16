@@ -1,3 +1,4 @@
+import '../l10n/ritual_i18n.dart';
 import '../models/meal_entry.dart';
 
 class JournalDay {
@@ -31,16 +32,33 @@ String feelingsSummary(List<MealEntry> entries) {
       counts.update(feeling, (count) => count + 1, ifAbsent: () => 1);
     }
   }
-  if (counts.isEmpty) return 'A day of noticing';
+  if (counts.isEmpty) return tr('A day of noticing');
   final feelings = counts.keys.toList()
     ..sort((a, b) {
       final byCount = counts[b]!.compareTo(counts[a]!);
       return byCount != 0 ? byCount : a.compareTo(b);
     });
-  if (feelings.length == 1) return 'Felt ${feelings.first.toLowerCase()}';
-  if (feelings.length == 2) {
-    return '${feelings.first} and ${feelings[1].toLowerCase()}';
+  if (feelings.length == 1) {
+    return tr(
+      'Felt {feeling}',
+      values: {'feeling': tr(feelings.first).toLowerCase()},
+    );
   }
-  return '${feelings[0]}, ${feelings[1].toLowerCase()} '
-      '+${feelings.length - 2} more';
+  if (feelings.length == 2) {
+    return tr(
+      '{first} and {second}',
+      values: {
+        'first': tr(feelings.first),
+        'second': tr(feelings[1]).toLowerCase(),
+      },
+    );
+  }
+  return tr(
+    '{first}, {second} +{count} more',
+    values: {
+      'first': tr(feelings[0]),
+      'second': tr(feelings[1]).toLowerCase(),
+      'count': feelings.length - 2,
+    },
+  );
 }

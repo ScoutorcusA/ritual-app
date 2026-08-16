@@ -1,0 +1,21 @@
+{
+  "name": "Ritual",
+  "short_name": "Ritual",
+  "description": "A private, mindful food photo journal.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F6F1E7",
+  "theme_color": "#F6F1E7",
+  "icons": [
+    {
+      "src": "/assets/ritual-logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/ritual-logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

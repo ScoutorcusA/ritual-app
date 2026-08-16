@@ -1,8 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../controllers/journal_controller.dart';
 import '../controllers/settings_controller.dart';
+import '../l10n/ritual_i18n.dart';
+import '../models/meal_entry.dart';
+import '../models/personal_intention.dart';
+import '../services/adaptive_reminder_advisor.dart';
+import '../services/meal_reminder_service.dart';
 import '../theme/ritual_theme.dart';
 import '../widgets/app_lock_gate.dart';
 import '../widgets/streak_celebration_overlay.dart';
@@ -12,10 +19,16 @@ import 'meal_editor_screen.dart';
 import 'settings_screen.dart';
 
 class RitualShell extends StatefulWidget {
-  const RitualShell({super.key, required this.controller, this.settings});
+  const RitualShell({
+    super.key,
+    required this.controller,
+    this.settings,
+    this.reminders,
+  });
 
   final JournalController controller;
   final SettingsController? settings;
+  final MealReminderScheduler? reminders;
 
   @override
   State<RitualShell> createState() => _RitualShellState();
@@ -25,13 +38,37 @@ class _RitualShellState extends State<RitualShell> {
   final ImagePicker _imagePicker = ImagePicker();
   int _selectedIndex = 0;
   bool _capturing = false;
+  bool _showingAdaptivePrompt = false;
+  bool _checkedExistingPatterns = false;
+  StreamSubscription<MealReminderResponse>? _reminderSubscription;
+  static const _adaptiveAdvisor = AdaptiveReminderAdvisor();
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => _recoverInterruptedCapture(),
+    widget.controller.addListener(_journalChanged);
+    _reminderSubscription = widget.reminders?.responses.listen(
+      _handleReminderResponse,
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _recoverInterruptedCapture();
+      final initial = await widget.reminders?.takeInitialResponse();
+      if (initial != null) await _handleReminderResponse(initial);
+      _journalChanged();
+    });
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_journalChanged);
+    _reminderSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _journalChanged() {
+    if (_checkedExistingPatterns || widget.controller.loading) return;
+    _checkedExistingPatterns = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _offerAdaptiveTime());
   }
 
   Future<void> _recoverInterruptedCapture() async {
@@ -43,7 +80,7 @@ class _RitualShellState extends State<RitualShell> {
     }
   }
 
-  Future<void> _captureMeal() async {
+  Future<void> _captureMeal([MealType? initialMealType]) async {
     if (_capturing) return;
     setState(() => _capturing = true);
     try {
@@ -57,11 +94,13 @@ class _RitualShellState extends State<RitualShell> {
           requestFullMetadata: false,
         ),
       );
-      if (photo != null && mounted) await _preparePhoto(photo);
+      if (photo != null && mounted) {
+        await _preparePhoto(photo, initialMealType: initialMealType);
+      }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('The camera could not be opened.')),
+          SnackBar(content: Text(tr('The camera could not be opened.'))),
         );
       }
     } finally {
@@ -69,7 +108,10 @@ class _RitualShellState extends State<RitualShell> {
     }
   }
 
-  Future<void> _preparePhoto(XFile temporaryPhoto) async {
+  Future<void> _preparePhoto(
+    XFile temporaryPhoto, {
+    MealType? initialMealType,
+  }) async {
     String? privatePath;
     try {
       privatePath = await widget.controller.keepCapturedPhoto(temporaryPhoto);
@@ -77,12 +119,31 @@ class _RitualShellState extends State<RitualShell> {
         await widget.controller.discardPhoto(privatePath);
         return;
       }
+      await _openNewEntry(privatePath, initialMealType: initialMealType);
+    } catch (_) {
+      if (privatePath != null) {
+        await widget.controller.discardPhoto(privatePath);
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('That photo could not be prepared.'))),
+        );
+      }
+    }
+  }
+
+  Future<void> _openNewEntry(
+    String privatePath, {
+    MealType? initialMealType,
+  }) async {
+    try {
       final outcome = await Navigator.of(context).push<Object?>(
         MaterialPageRoute<Object?>(
           builder: (_) => MealEditorScreen(
             controller: widget.controller,
-            imagePath: privatePath!,
+            imagePath: privatePath,
             settings: widget.settings,
+            initialMealType: initialMealType,
           ),
         ),
       );
@@ -93,27 +154,173 @@ class _RitualShellState extends State<RitualShell> {
             mounted) {
           await _showStreakMoment();
         }
+        final savedKind = _kindFor(outcome.entry.mealType);
+        if (savedKind != null) await _offerAdaptiveTime(kind: savedKind);
       } else {
         await widget.controller.discardPhoto(privatePath);
       }
     } catch (_) {
-      if (privatePath != null) {
-        await widget.controller.discardPhoto(privatePath);
-      }
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('That photo could not be prepared.')),
-        );
-      }
+      await widget.controller.discardPhoto(privatePath);
+      rethrow;
     }
   }
+
+  Future<void> _handleReminderResponse(MealReminderResponse response) async {
+    while (mounted && !AppLockGate.interactionAllowed(context)) {
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+    }
+    if (!mounted) return;
+    final type = _mealTypeFor(response.kind);
+    switch (response.action) {
+      case ReminderAction.takePhoto:
+        await _captureMeal(type);
+        return;
+      case ReminderAction.snooze:
+        await widget.reminders?.snooze(
+          response.kind,
+          intention:
+              widget.settings?.personalIntention ??
+              PersonalIntention.mindfulPause,
+        );
+        if (mounted) _message(tr('We’ll remind you again in 30 minutes.'));
+        return;
+      case ReminderAction.skipToday:
+        await widget.settings?.skipRemindersToday();
+        if (mounted) _message(tr('Meal reminders are paused for today.'));
+        return;
+    }
+  }
+
+  void _message(String text) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+  }
+
+  Future<void> _offerAdaptiveTime({MealReminderKind? kind}) async {
+    final settings = widget.settings;
+    if (!mounted ||
+        _showingAdaptivePrompt ||
+        settings == null ||
+        !settings.mealRemindersEnabled) {
+      return;
+    }
+    final kinds = kind == null
+        ? const [
+            MealReminderKind.breakfast,
+            MealReminderKind.lunch,
+            MealReminderKind.dinner,
+          ]
+        : [kind];
+    AdaptiveReminderSuggestion? suggestion;
+    for (final candidate in kinds) {
+      suggestion = _adaptiveAdvisor.suggestionFor(
+        entries: widget.controller.entries,
+        kind: candidate,
+        currentMinutes: _minutesFor(settings.reminderSchedule, candidate),
+        dismissedSuggestedMinutes: settings.dismissedAdaptiveTime(candidate),
+      );
+      if (suggestion != null) break;
+    }
+    if (suggestion == null || !mounted) return;
+    final prompt = suggestion;
+    _showingAdaptivePrompt = true;
+    final accepted = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.schedule_outlined),
+        title: Text(
+          tr(
+            'A better time for {mealType}?',
+            values: {'mealType': _kindLabel(prompt.kind)},
+          ),
+        ),
+        content: Text(
+          tr(
+            'Your recent {mealType} entries have usually been logged around {typicalTime}. Move the reminder to {suggestedTime}?',
+            values: {
+              'mealType': _kindLabel(prompt.kind),
+              'typicalTime': _formatMinutes(context, prompt.typicalMinutes),
+              'suggestedTime': _formatMinutes(context, prompt.suggestedMinutes),
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              tr(
+                'Keep {time}',
+                values: {
+                  'time': _formatMinutes(context, prompt.currentMinutes),
+                },
+              ),
+            ),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              tr(
+                'Move to {time}',
+                values: {
+                  'time': _formatMinutes(context, prompt.suggestedMinutes),
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    _showingAdaptivePrompt = false;
+    if (accepted == true) {
+      await settings.setReminderTime(prompt.kind, prompt.suggestedMinutes);
+    } else {
+      await settings.dismissAdaptiveReminderSuggestion(
+        prompt.kind,
+        prompt.suggestedMinutes,
+      );
+    }
+  }
+
+  MealType? _mealTypeFor(MealReminderKind kind) => switch (kind) {
+    MealReminderKind.breakfast => MealType.breakfast,
+    MealReminderKind.lunch => MealType.lunch,
+    MealReminderKind.dinner => MealType.dinner,
+    MealReminderKind.emptyDay => null,
+  };
+
+  MealReminderKind? _kindFor(MealType type) => switch (type) {
+    MealType.breakfast => MealReminderKind.breakfast,
+    MealType.lunch => MealReminderKind.lunch,
+    MealType.dinner => MealReminderKind.dinner,
+    MealType.snack => null,
+  };
+
+  int _minutesFor(ReminderSchedule schedule, MealReminderKind kind) =>
+      switch (kind) {
+        MealReminderKind.breakfast => schedule.breakfastMinutes,
+        MealReminderKind.lunch => schedule.lunchMinutes,
+        MealReminderKind.dinner => schedule.dinnerMinutes,
+        MealReminderKind.emptyDay => schedule.emptyDayMinutes,
+      };
+
+  String _kindLabel(MealReminderKind kind) => switch (kind) {
+    MealReminderKind.breakfast => tr('breakfast'),
+    MealReminderKind.lunch => tr('lunch'),
+    MealReminderKind.dinner => tr('dinner'),
+    MealReminderKind.emptyDay => tr('evening check-in'),
+  };
+
+  String _formatMinutes(BuildContext context, int minutes) =>
+      MaterialLocalizations.of(
+        context,
+      ).formatTimeOfDay(TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60));
 
   Future<void> _showStreakMoment() {
     final streak = widget.controller.currentStreak;
     return showGeneralDialog<void>(
       context: context,
       barrierDismissible: false,
-      barrierLabel: 'Streak updated',
+      barrierLabel: tr('Streak updated'),
       barrierColor: Colors.transparent,
       transitionDuration: const Duration(milliseconds: 320),
       pageBuilder: (_, _, _) => StreakCelebrationOverlay(streak: streak),
@@ -140,6 +347,7 @@ class _RitualShellState extends State<RitualShell> {
           JournalScreen(
             controller: widget.controller,
             settings: widget.settings,
+            onCapture: _captureMeal,
             onSettings: () {
               final settings = widget.settings;
               if (settings != null) {
@@ -163,7 +371,7 @@ class _RitualShellState extends State<RitualShell> {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: FloatingActionButton.large(
         onPressed: _capturing ? null : _captureMeal,
-        tooltip: 'Photograph a meal',
+        tooltip: tr('Photograph a meal'),
         backgroundColor: RitualColors.terracotta,
         foregroundColor: Colors.white,
         child: _capturing
@@ -186,7 +394,7 @@ class _RitualShellState extends State<RitualShell> {
                 child: _NavItem(
                   icon: Icons.auto_stories_outlined,
                   selectedIcon: Icons.auto_stories,
-                  label: 'Journal',
+                  label: tr('Journal'),
                   selected: _selectedIndex == 0,
                   onTap: () => setState(() => _selectedIndex = 0),
                 ),
@@ -196,7 +404,7 @@ class _RitualShellState extends State<RitualShell> {
                 child: _NavItem(
                   icon: Icons.collections_bookmark_outlined,
                   selectedIcon: Icons.collections_bookmark_rounded,
-                  label: 'Browse',
+                  label: tr('Browse'),
                   selected: _selectedIndex == 1,
                   onTap: () => setState(() => _selectedIndex = 1),
                 ),

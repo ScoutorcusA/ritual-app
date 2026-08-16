@@ -19,6 +19,8 @@ The source-code license does not grant rights to the Ritual name, logo, app icon
 
 Contributions are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md), follow the [Code of Conduct](CODE_OF_CONDUCT.md), report vulnerabilities through the [security policy](SECURITY.md), and see the short [public roadmap](ROADMAP.md). Issues labeled [`good first issue`](https://github.com/ScoutorcusA/ritual-app/labels/good%20first%20issue) are intended as approachable starting points.
 
+The Android app and website share one volunteer-friendly translation source in [`translations/`](translations/). See [Translations and Languages](wiki/Translations-and-Languages.md) to add a locale and validate it.
+
 ## What Ritual can do
 
 ### Capture and reflect
@@ -232,7 +234,7 @@ flutter test
 
 Sample synthetic exports used for layout and interoperability checks are stored in:
 
-- `output/pdf/ritual-sample-clinician-report.pdf`
+- `output/pdf/ritual-sample-journal-report.pdf`
 - `output/csv/ritual-sample-journal.csv`
 
 The solid-color images in the sample PDF are deliberately generated test images. Reports created inside Ritual use the journal’s actual app-private meal photos.

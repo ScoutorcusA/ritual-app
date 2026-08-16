@@ -1,5 +1,7 @@
 import 'package:flutter/services.dart';
 
+import '../l10n/ritual_i18n.dart';
+
 class LocalFileSaverException implements Exception {
   const LocalFileSaverException(this.message);
 
@@ -27,7 +29,7 @@ class LocalFileSaver {
       return saved ?? false;
     } on PlatformException catch (error) {
       throw LocalFileSaverException(
-        error.message ?? 'Android could not save the selected file.',
+        error.message ?? tr('Android could not save the selected file.'),
       );
     }
   }

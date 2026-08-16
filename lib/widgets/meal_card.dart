@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../l10n/ritual_i18n.dart';
 import '../models/meal_entry.dart';
 import '../theme/ritual_theme.dart';
 import 'meal_photo.dart';
@@ -15,8 +16,13 @@ class MealCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label:
-          '${entry.mealType.label} at ${DateFormat.jm().format(entry.createdAt)}',
+      label: tr(
+        '{mealType} at {time}',
+        values: {
+          'mealType': entry.mealType.label,
+          'time': DateFormat.jm(RitualI18n.localeName).format(entry.createdAt),
+        },
+      ),
       child: Card(
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),

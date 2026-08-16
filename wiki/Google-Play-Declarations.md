@@ -1,6 +1,6 @@
 # Google Play Declarations
 
-**Prepared for Ritual 1.6.0+11 on August 15, 2026.** Re-audit these answers whenever code, SDKs, permissions, monetization, sharing behavior, or network behavior changes.
+**Prepared for Ritual 1.6.0+11 on August 16, 2026.** Re-audit these answers whenever code, SDKs, permissions, monetization, sharing behavior, or network behavior changes. See [[Development, Testing, and Releases]] for the internal/closed-testing and app-signing workflow.
 
 ## Privacy policy URL
 

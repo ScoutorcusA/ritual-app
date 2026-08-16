@@ -21,6 +21,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Your daily ritual'), findsOneWidget);
+    expect(find.text('One moment for today'), findsOneWidget);
+    expect(find.text('Save today’s first moment'), findsOneWidget);
     expect(find.text('Begin with one mindful meal'), findsOneWidget);
     expect(
       find.byWidgetPredicate(

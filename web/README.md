@@ -25,6 +25,10 @@ GitHub recommends verifying `nishkamk.com` in the account’s Pages settings bef
 
 The site and Android app can live in the same repository. The website deploy only uploads `/web`; it does not package or modify the Flutter app.
 
+## Translations
+
+The canonical app-and-website catalogs live in `/translations`. Files under `web/assets/i18n/` are generated copies for the static site and should not be edited directly. See the [translation guide](../wiki/Translations-and-Languages.md) for the volunteer workflow.
+
 Other static hosts such as Cloudflare Pages, Netlify, or Vercel can also publish this folder. Set the project root/output directory to `web` and leave the build command empty.
 
 ## Brand icons

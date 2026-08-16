@@ -18,7 +18,13 @@ Import retains original entry dates but deliberately does not trigger the first-
 
 ## PDF report
 
-The PDF is designed for personal review with a dietitian/doctor. Its compact day headings, smaller photo thumbnails, and reduced card spacing place substantially more entries on each page while preserving every recorded field. It groups selected entries by day and includes real meal photos, meal types, times, feelings, notes, place/coordinates, and enabled values that were recorded. Solid-color photos appear only in repository sample reports because the generator uses synthetic test images.
+The PDF opens with a **Journal patterns** overview for the selected period. It shows days with entries, period coverage, total entries, entries per logged day, meal-type distribution, optional rating means/ranges/response counts, the three most frequently selected feelings, meal-time ranges, neutral review cues, and field-completion counts. Unanswered optional ratings are not treated as zero.
+
+A weekly pattern table follows the overview. Each date has separate Breakfast, Lunch, Dinner, and Snacks columns. Every matching entry is listed with its time and available hunger/craving/fullness shorthand. Multiple snacks, or repeated entries of any other meal type, appear on separate lines rather than being combined or discarded.
+
+The **Complete journal** appendix preserves every selected entry and every recorded field: the real meal photo, meal type, time, feelings, place/coordinates, optional ratings, and complete reflection. Long reflections are not shortened; they flow onto later pages when necessary. Compact day headings, smaller thumbnails, and reduced card spacing increase density without deleting source data. Solid-color photos appear only in repository sample reports because the generator uses synthetic test images.
+
+The overview contains observations from self-recorded data, not medical conclusions. The PDF remains an unencrypted export and should be stored privately and shared only with trusted recipients.
 
 ## CSV report
 

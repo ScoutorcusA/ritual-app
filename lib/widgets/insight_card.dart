@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../insights/insight_engine.dart';
+import '../l10n/ritual_i18n.dart';
 import '../theme/ritual_theme.dart';
 
 class InsightCard extends StatelessWidget {
@@ -51,7 +52,7 @@ class InsightCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'RITUAL INSIGHT',
+                  tr('RITUAL INSIGHT'),
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: RitualColors.terracotta,
                     fontWeight: FontWeight.w800,

@@ -14,6 +14,7 @@ Ritual is an Android-first, local-only mindful food photo journal. It is designe
 - [[Export and Import]] — ZIP backup, PDF/CSV reports, ranges, and validation
 - [[Architecture and Data]] — Flutter structure, SQLite schema, image lifecycle, and state flow
 - [[Development, Testing, and Releases]] — local development, automated checks, signing, and APK releases
+- [[Translations and Languages]] — add a volunteer translation shared by the app and website
 - [[Troubleshooting]] — notifications, location, authentication, exports, and installation
 
 ## Product principles

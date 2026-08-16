@@ -1,5 +1,7 @@
 import 'package:flutter/services.dart';
 
+import '../l10n/ritual_i18n.dart';
+
 class CityGeocoderException implements Exception {
   const CityGeocoderException(this.message);
 
@@ -26,8 +28,8 @@ class CityGeocoder {
         'longitude': longitude,
       });
       if (label == null || label.trim().isEmpty) {
-        throw const CityGeocoderException(
-          'Android did not return a city for this area.',
+        throw CityGeocoderException(
+          tr('Android did not return a city for this area.'),
         );
       }
       return label.trim();
@@ -35,7 +37,7 @@ class CityGeocoder {
       throw CityGeocoderException(
         error.message?.trim().isNotEmpty == true
             ? error.message!.trim()
-            : 'Android could not name this area.',
+            : tr('Android could not name this area.'),
       );
     }
   }

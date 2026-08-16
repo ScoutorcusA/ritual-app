@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../controllers/settings_controller.dart';
+import '../l10n/ritual_i18n.dart';
+import '../models/personal_intention.dart';
 import '../services/meal_reminder_service.dart';
 import '../theme/ritual_theme.dart';
 
@@ -19,7 +21,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   bool _finishing = false;
 
   Future<void> _next() async {
-    if (_page < 3) {
+    if (_page < 4) {
       await _pages.nextPage(
         duration: const Duration(milliseconds: 280),
         curve: Curves.easeOutCubic,
@@ -41,8 +43,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       SnackBar(
         content: Text(
           result == ReminderToggleResult.permissionDenied
-              ? 'Notifications were not allowed. You can enable them later in Settings.'
-              : 'Reminders are unavailable right now. You can try again later.',
+              ? tr(
+                  'Notifications were not allowed. You can enable them later in Settings.',
+                )
+              : tr(
+                  'Reminders are unavailable right now. You can try again later.',
+                ),
         ),
       ),
     );
@@ -52,7 +58,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     final picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60),
-      helpText: 'Choose reminder time',
+      helpText: tr('Choose reminder time'),
     );
     if (picked != null) {
       await widget.settings.setReminderTime(
@@ -80,7 +86,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               child: Row(
                 children: [
                   Text(
-                    'RITUAL',
+                    tr('RITUAL'),
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
                       color: RitualColors.sage,
                       fontWeight: FontWeight.w800,
@@ -92,7 +98,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     onPressed: _finishing
                         ? null
                         : widget.settings.completeOnboarding,
-                    child: const Text('Skip setup'),
+                    child: Text(tr('Skip setup')),
                   ),
                 ],
               ),
@@ -102,34 +108,68 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 controller: _pages,
                 onPageChanged: (value) => setState(() => _page = value),
                 children: [
-                  const _WelcomePage(
+                  _WelcomePage(
                     icon: Icons.spa_outlined,
-                    title: 'Notice, without judgment',
-                    body:
-                        'Ritual is a private photo journal for meals, feelings, places, and patterns—not calories or scores.',
-                    child: _PrivacyPreview(),
+                    title: tr('Notice, without judgment'),
+                    body: tr(
+                      'Ritual is a private photo journal for meals, feelings, places, and patterns—not calories or scores.',
+                    ),
+                    child: const _PrivacyPreview(),
+                  ),
+                  _WelcomePage(
+                    icon: Icons.flag_outlined,
+                    title: tr('What should Ritual support?'),
+                    body: tr(
+                      'Choose a personal intention. Ritual will use it for prompts, insights, and reminder wording.',
+                    ),
+                    child: Card(
+                      clipBehavior: Clip.antiAlias,
+                      child: RadioGroup<PersonalIntention>(
+                        groupValue: widget.settings.personalIntention,
+                        onChanged: (value) {
+                          if (value != null) {
+                            widget.settings.setPersonalIntention(value);
+                          }
+                        },
+                        child: Column(
+                          children: [
+                            for (final (index, intention)
+                                in PersonalIntention.values.indexed) ...[
+                              RadioListTile<PersonalIntention>(
+                                value: intention,
+                                title: Text(intention.label),
+                                subtitle: Text(intention.description),
+                              ),
+                              if (index < PersonalIntention.values.length - 1)
+                                const Divider(height: 1),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                   _WelcomePage(
                     icon: Icons.palette_outlined,
-                    title: 'Make it feel like yours',
-                    body:
-                        'Choose an appearance. You can change it at any time.',
+                    title: tr('Make it feel like yours'),
+                    body: tr(
+                      'Choose an appearance. You can change it at any time.',
+                    ),
                     child: SegmentedButton<ThemeMode>(
-                      segments: const [
+                      segments: [
                         ButtonSegment(
                           value: ThemeMode.system,
-                          label: Text('System'),
-                          icon: Icon(Icons.settings_brightness_outlined),
+                          label: Text(tr('System')),
+                          icon: const Icon(Icons.settings_brightness_outlined),
                         ),
                         ButtonSegment(
                           value: ThemeMode.light,
-                          label: Text('Light'),
-                          icon: Icon(Icons.light_mode_outlined),
+                          label: Text(tr('Light')),
+                          icon: const Icon(Icons.light_mode_outlined),
                         ),
                         ButtonSegment(
                           value: ThemeMode.dark,
-                          label: Text('Dark'),
-                          icon: Icon(Icons.dark_mode_outlined),
+                          label: Text(tr('Dark')),
+                          icon: const Icon(Icons.dark_mode_outlined),
                         ),
                       ],
                       selected: {widget.settings.themeMode},
@@ -139,9 +179,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   ),
                   _WelcomePage(
                     icon: Icons.tune_rounded,
-                    title: 'Choose what you reflect on',
-                    body:
-                        'The journal stays simple unless you turn on more prompts.',
+                    title: tr('Choose what you reflect on'),
+                    body: tr(
+                      'The journal stays simple unless you turn on more prompts.',
+                    ),
                     child: Card(
                       clipBehavior: Clip.antiAlias,
                       child: Column(
@@ -149,27 +190,27 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                           SwitchListTile(
                             value: widget.settings.hungerScaleEnabled,
                             onChanged: widget.settings.setHungerScaleEnabled,
-                            title: const Text('Hunger before eating'),
+                            title: Text(tr('Hunger before eating')),
                           ),
                           const Divider(height: 1),
                           SwitchListTile(
                             value: widget.settings.cravingScaleEnabled,
                             onChanged: widget.settings.setCravingScaleEnabled,
-                            title: const Text('Craving before eating'),
+                            title: Text(tr('Craving before eating')),
                           ),
                           const Divider(height: 1),
                           SwitchListTile(
                             value: widget.settings.fullnessScaleEnabled,
                             onChanged: widget.settings.setFullnessScaleEnabled,
-                            title: const Text('Fullness after eating'),
+                            title: Text(tr('Fullness after eating')),
                           ),
                           const Divider(height: 1),
                           SwitchListTile(
                             value: widget.settings.streaksEnabled,
                             onChanged: widget.settings.setStreaksEnabled,
-                            title: const Text('Gentle streaks'),
-                            subtitle: const Text(
-                              'Optional progress and milestones',
+                            title: Text(tr('Gentle streaks')),
+                            subtitle: Text(
+                              tr('Optional progress and milestones'),
                             ),
                           ),
                         ],
@@ -178,9 +219,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   ),
                   _WelcomePage(
                     icon: Icons.notifications_none_rounded,
-                    title: 'Set your rhythm',
-                    body:
-                        'Reminders are local and automatically skip meals you have already logged.',
+                    title: tr('Set your rhythm'),
+                    body: tr(
+                      'Reminders are local and automatically skip meals you have already logged.',
+                    ),
                     child: Card(
                       clipBehavior: Clip.antiAlias,
                       child: Column(
@@ -188,11 +230,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                           SwitchListTile(
                             value: widget.settings.mealRemindersEnabled,
                             onChanged: _setReminders,
-                            title: const Text('Enable reminders'),
+                            title: Text(tr('Enable reminders')),
                           ),
                           const Divider(height: 1),
                           _WelcomeTimeTile(
-                            label: 'Breakfast',
+                            label: tr('Breakfast'),
                             minutes: widget
                                 .settings
                                 .reminderSchedule
@@ -203,7 +245,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                             ),
                           ),
                           _WelcomeTimeTile(
-                            label: 'Lunch',
+                            label: tr('Lunch'),
                             minutes:
                                 widget.settings.reminderSchedule.lunchMinutes,
                             onTap: () => _pickTime(
@@ -212,7 +254,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                             ),
                           ),
                           _WelcomeTimeTile(
-                            label: 'Dinner',
+                            label: tr('Dinner'),
                             minutes:
                                 widget.settings.reminderSchedule.dinnerMinutes,
                             onTap: () => _pickTime(
@@ -221,7 +263,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                             ),
                           ),
                           _WelcomeTimeTile(
-                            label: 'Empty-day check-in',
+                            label: tr('Empty-day check-in'),
                             minutes: widget
                                 .settings
                                 .reminderSchedule
@@ -242,7 +284,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
               child: Row(
                 children: [
-                  for (var index = 0; index < 4; index++)
+                  for (var index = 0; index < 5; index++)
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
                       width: index == _page ? 24 : 8,
@@ -259,9 +301,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   FilledButton.icon(
                     onPressed: _finishing ? null : _next,
                     icon: Icon(
-                      _page == 3 ? Icons.check_rounded : Icons.arrow_forward,
+                      _page == 4 ? Icons.check_rounded : Icons.arrow_forward,
                     ),
-                    label: Text(_page == 3 ? 'Start journaling' : 'Continue'),
+                    label: Text(
+                      _page == 4 ? tr('Start journaling') : tr('Continue'),
+                    ),
                   ),
                 ],
               ),
@@ -348,7 +392,7 @@ class _PrivacyLine extends StatelessWidget {
     children: [
       Icon(icon, color: RitualColors.sage),
       const SizedBox(width: 14),
-      Expanded(child: Text(label)),
+      Expanded(child: Text(tr(label))),
     ],
   );
 }

@@ -46,6 +46,9 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
+      - name: Check translations
+        run: dart run tool/localization_tool.dart check
+
       - name: Test
         run: flutter test
 

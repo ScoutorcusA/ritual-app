@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/ritual_i18n.dart';
 import '../theme/ritual_theme.dart';
 
 const ritualSupportUrl = 'https://ritualapp.nishkamk.com/support/';
@@ -15,14 +16,14 @@ class SupportRitualScreen extends StatelessWidget {
     );
     if (!opened && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('The support page could not be opened.')),
+        SnackBar(content: Text(tr('The support page could not be opened.'))),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Support Ritual')),
+    appBar: AppBar(title: Text(tr('Support Ritual'))),
     body: ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
       children: [
@@ -32,51 +33,59 @@ class SupportRitualScreen extends StatelessWidget {
             color: RitualColors.terracotta.withValues(alpha: 0.13),
             borderRadius: BorderRadius.circular(24),
           ),
-          child: const Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
+              const Icon(
                 Icons.favorite_border_rounded,
                 color: RitualColors.terracotta,
                 size: 34,
               ),
-              SizedBox(height: 18),
+              const SizedBox(height: 18),
               Text(
-                'Ritual is free forever.',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600),
+                tr('Ritual is free forever.'),
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               Text(
-                'If Ritual is useful to you, you can optionally support its '
-                'continued development. Supporting Ritual does not unlock '
-                'features or change the app in any way.',
+                tr(
+                  'If Ritual is useful to you, you can optionally support its continued development. Supporting Ritual does not unlock features or change the app in any way.',
+                ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 18),
-        const Card(
+        Card(
           child: Padding(
-            padding: EdgeInsets.all(20),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'The same app for everyone',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  tr('The same app for everyone'),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 _SupportPromise(
                   icon: Icons.check_rounded,
-                  text: 'Every feature remains available without payment.',
+                  text: tr('Every feature remains available without payment.'),
                 ),
                 _SupportPromise(
                   icon: Icons.check_rounded,
-                  text: 'No supporter badges, special access, or priority.',
+                  text: tr('No supporter badges, special access, or priority.'),
                 ),
                 _SupportPromise(
                   icon: Icons.check_rounded,
-                  text: 'No recurring prompts or interruption to journaling.',
+                  text: tr(
+                    'No recurring prompts or interruption to journaling.',
+                  ),
                 ),
               ],
             ),
@@ -86,13 +95,13 @@ class SupportRitualScreen extends StatelessWidget {
         FilledButton.icon(
           onPressed: () => _openSupportPage(context),
           icon: const Icon(Icons.open_in_new_rounded),
-          label: const Text('Visit support page'),
+          label: Text(tr('Visit support page')),
         ),
         const SizedBox(height: 12),
         Text(
-          'This opens ritualapp.nishkamk.com in your browser. Ritual sends no '
-          'journal data or payment information. Any sponsorship is handled by '
-          'the external provider under its own terms and privacy policy.',
+          tr(
+            'This opens ritualapp.nishkamk.com in your browser. Ritual sends no journal data or payment information. Any sponsorship is handled by the external provider under its own terms and privacy policy.',
+          ),
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodySmall,
         ),

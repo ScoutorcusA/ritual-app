@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../l10n/ritual_i18n.dart';
 import '../models/meal_entry.dart';
 import '../theme/ritual_theme.dart';
 import '../widgets/app_lock_gate.dart';
@@ -67,12 +68,14 @@ class _ShareCardScreenState extends State<ShareCardScreen> {
       await WidgetsBinding.instance.endOfFrame;
       final boundary =
           _cardKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-      if (boundary == null) throw StateError('Share card was not ready.');
+      if (boundary == null) throw StateError(tr('Share card was not ready.'));
       final pixelRatio = (1080 / boundary.size.width).clamp(1.0, 4.0);
       final image = await boundary.toImage(pixelRatio: pixelRatio);
       final data = await image.toByteData(format: ui.ImageByteFormat.png);
       image.dispose();
-      if (data == null) throw StateError('Share card could not be rendered.');
+      if (data == null) {
+        throw StateError(tr('Share card could not be rendered.'));
+      }
       final directory = await getTemporaryDirectory();
       temporaryCard = File(
         p.join(
@@ -87,15 +90,15 @@ class _ShareCardScreenState extends State<ShareCardScreen> {
         () => SharePlus.instance.share(
           ShareParams(
             files: [XFile(temporaryCard!.path, mimeType: 'image/png')],
-            text: 'A mindful moment from Ritual',
-            subject: 'My Ritual reflection',
+            text: tr('A mindful moment from Ritual'),
+            subject: tr('My Ritual reflection'),
           ),
         ),
       );
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('The share card could not be created.')),
+          SnackBar(content: Text(tr('The share card could not be created.'))),
         );
       }
     } finally {
@@ -114,17 +117,19 @@ class _ShareCardScreenState extends State<ShareCardScreen> {
   Widget build(BuildContext context) {
     final selected = _selectedEntries;
     return Scaffold(
-      appBar: AppBar(title: const Text('Share a reflection')),
+      appBar: AppBar(title: Text(tr('Share a reflection'))),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
         children: [
           Text(
-            'Choose up to four recent moments',
+            tr('Choose up to four recent moments'),
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 6),
-          const Text(
-            'Only the selected photos and optional streak appear. Notes, feelings, dates, and places stay private.',
+          Text(
+            tr(
+              'Only the selected photos and optional streak appear. Notes, feelings, dates, and places stay private.',
+            ),
           ),
           const SizedBox(height: 16),
           SizedBox(
@@ -137,7 +142,10 @@ class _ShareCardScreenState extends State<ShareCardScreen> {
                 final entry = _recentEntries[index];
                 final selected = _selectedIds.contains(entry.id);
                 return Semantics(
-                  label: '${entry.mealType.label} photo',
+                  label: tr(
+                    '{mealType} photo',
+                    values: {'mealType': entry.mealType.label},
+                  ),
                   selected: selected,
                   child: InkWell(
                     onTap: () => _toggleEntry(entry),
@@ -188,8 +196,14 @@ class _ShareCardScreenState extends State<ShareCardScreen> {
               contentPadding: EdgeInsets.zero,
               value: _includeStreak,
               onChanged: (value) => setState(() => _includeStreak = value),
-              title: const Text('Include current streak'),
-              subtitle: Text('${widget.currentStreak} days'),
+              title: Text(tr('Include current streak')),
+              subtitle: Text(
+                trPlural(
+                  widget.currentStreak,
+                  one: '{count} day',
+                  other: '{count} days',
+                ),
+              ),
             ),
           ],
           const SizedBox(height: 18),
@@ -217,7 +231,7 @@ class _ShareCardScreenState extends State<ShareCardScreen> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.ios_share_rounded),
-            label: Text(_sharing ? 'Preparing card…' : 'Share card'),
+            label: Text(_sharing ? tr('Preparing card…') : tr('Share card')),
             style: FilledButton.styleFrom(
               minimumSize: const Size.fromHeight(54),
             ),
@@ -244,7 +258,7 @@ class _ShareCardArtwork extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              streak == null ? 'RECENT MOMENTS' : 'A GENTLE STREAK',
+              streak == null ? tr('RECENT MOMENTS') : tr('A GENTLE STREAK'),
               style: const TextStyle(
                 color: RitualColors.sage,
                 fontSize: 11,
@@ -255,8 +269,8 @@ class _ShareCardArtwork extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               streak == null
-                  ? 'A few things I noticed'
-                  : '$streak days of noticing',
+                  ? tr('A few things I noticed')
+                  : tr('{count} days of noticing', values: {'count': streak}),
               style: const TextStyle(
                 color: RitualColors.ink,
                 fontSize: 26,
@@ -271,16 +285,18 @@ class _ShareCardArtwork extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  DateFormat.yMMMM().format(DateTime.now()),
+                  DateFormat.yMMMM(
+                    RitualI18n.localeName,
+                  ).format(DateTime.now()),
                   style: const TextStyle(
                     color: RitualColors.sage,
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const Text(
-                  'MADE WITH RITUAL',
-                  style: TextStyle(
+                Text(
+                  tr('MADE WITH RITUAL'),
+                  style: const TextStyle(
                     color: RitualColors.terracotta,
                     fontSize: 10,
                     letterSpacing: 1.4,

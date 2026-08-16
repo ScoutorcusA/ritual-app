@@ -9,8 +9,10 @@ import 'package:path_provider/path_provider.dart';
 
 import '../controllers/journal_controller.dart';
 import '../controllers/settings_controller.dart';
+import '../l10n/ritual_i18n.dart';
 import '../models/journal_export.dart';
 import '../models/meal_entry.dart';
+import '../models/personal_intention.dart';
 import '../services/journal_archive_service.dart';
 import '../services/journal_csv_service.dart';
 import '../services/journal_pdf_service.dart';
@@ -54,21 +56,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       _message(
         enabled
-            ? 'Device lock is now protecting Ritual.'
-            : 'Device authentication is not set up or was canceled.',
+            ? tr('Device lock is now protecting Ritual.')
+            : tr('Device authentication is not set up or was canceled.'),
       );
       return;
     }
-    final first = await _requestPin('Create a Ritual PIN');
+    final first = await _requestPin(tr('Create a Ritual PIN'));
     if (!mounted || first == null) return;
-    final second = await _requestPin('Confirm your PIN');
+    final second = await _requestPin(tr('Confirm your PIN'));
     if (!mounted || second == null) return;
     if (first != second) {
-      _message('Those PINs did not match. Nothing changed.');
+      _message(tr('Those PINs did not match. Nothing changed.'));
       return;
     }
     await widget.settings.setPin(first);
-    if (mounted) _message('Your Ritual PIN is ready.');
+    if (mounted) _message(tr('Your Ritual PIN is ready.'));
   }
 
   Future<String?> _requestPin(String title) {
@@ -111,15 +113,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
       if (!mounted || !saved) return;
       _message(
-        '${result.entryCount} ${result.entryCount == 1 ? 'entry' : 'entries'} '
-        'exported${result.encrypted ? ' with password protection' : ''}.',
+        tr(
+          result.encrypted
+              ? '{entries} exported with password protection.'
+              : '{entries} exported.',
+          values: {
+            'entries': trPlural(
+              result.entryCount,
+              one: '{count} entry',
+              other: '{count} entries',
+            ),
+          },
+        ),
       );
     } on RitualArchiveException catch (error) {
       if (mounted) _message(error.message, error: true);
     } on LocalFileSaverException catch (error) {
       if (mounted) _message(error.message, error: true);
     } catch (error) {
-      if (mounted) _message('Export failed: $error', error: true);
+      if (mounted) {
+        _message(
+          tr('Export failed: {error}', values: {'error': error}),
+          error: true,
+        );
+      }
     } finally {
       if (temporaryArchive != null) {
         try {
@@ -140,19 +157,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
         context: context,
         builder: (context) => AlertDialog(
           icon: const Icon(Icons.notifications_off_outlined),
-          title: const Text('Notifications are turned off'),
-          content: const Text(
-            'Android did not allow Ritual to send reminders. You can allow '
-            'notifications in Ritual’s Android settings, then turn reminders on.',
+          title: Text(tr('Notifications are turned off')),
+          content: Text(
+            tr(
+              'Android did not allow Ritual to send reminders. You can allow notifications in Ritual’s Android settings, then turn reminders on.',
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Not now'),
+              child: Text(tr('Not now')),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Open settings'),
+              child: Text(tr('Open settings')),
             ),
           ],
         ),
@@ -162,7 +180,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     } else if (result == ReminderToggleResult.unavailable) {
       _message(
-        'Ritual could not start reminders. Restart the app and try again.',
+        tr('Ritual could not start reminders. Restart the app and try again.'),
         error: true,
       );
     }
@@ -178,7 +196,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         hour: currentMinutes ~/ 60,
         minute: currentMinutes % 60,
       ),
-      helpText: 'Choose reminder time',
+      helpText: tr('Choose reminder time'),
     );
     if (picked != null) {
       await widget.settings.setReminderTime(
@@ -197,15 +215,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  Future<void> _choosePersonalIntention() async {
+    final selected = await showDialog<PersonalIntention>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: Text(tr('Personal intention')),
+        children: [
+          RadioGroup<PersonalIntention>(
+            groupValue: widget.settings.personalIntention,
+            onChanged: (value) => Navigator.pop(context, value),
+            child: Column(
+              children: [
+                for (final intention in PersonalIntention.values)
+                  RadioListTile<PersonalIntention>(
+                    value: intention,
+                    title: Text(intention.label),
+                    subtitle: Text(intention.description),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    if (selected != null) {
+      await widget.settings.setPersonalIntention(selected);
+    }
+  }
+
   Future<void> _copyDebugLog() async {
     try {
       final log = await DebugLogService.instance.copyableText();
       await Clipboard.setData(ClipboardData(text: log));
       if (mounted) {
-        _message('Debug log copied. You can paste it into a message.');
+        _message(tr('Debug log copied. You can paste it into a message.'));
       }
     } catch (_) {
-      if (mounted) _message('The debug log could not be copied.', error: true);
+      if (mounted) {
+        _message(tr('The debug log could not be copied.'), error: true);
+      }
     }
   }
 
@@ -243,7 +291,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         entryCount = result.entryCount;
       }
       final savedPath = await FilePicker.saveFile(
-        dialogTitle: 'Export Ritual journal report',
+        dialogTitle: tr('Export Ritual journal report'),
         fileName: fileName,
         type: FileType.custom,
         allowedExtensions: [isPdf ? 'pdf' : 'csv'],
@@ -251,11 +299,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
       if (!mounted || savedPath == null) return;
       _message(
-        '$entryCount ${entryCount == 1 ? 'entry' : 'entries'} '
-        'exported to ${isPdf ? 'PDF' : 'CSV'}.',
+        tr(
+          '{entries} exported to {format}.',
+          values: {
+            'entries': trPlural(
+              entryCount,
+              one: '{count} entry',
+              other: '{count} entries',
+            ),
+            'format': isPdf ? 'PDF' : 'CSV',
+          },
+        ),
       );
     } catch (error) {
-      if (mounted) _message('Report export failed: $error', error: true);
+      if (mounted) {
+        _message(
+          tr('Report export failed: {error}', values: {'error': error}),
+          error: true,
+        );
+      }
     } finally {
       if (mounted) setState(() => _working = false);
     }
@@ -271,18 +333,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Icons.delete_forever_outlined,
           color: Theme.of(context).colorScheme.error,
         ),
-        title: const Text('Delete all journal data?'),
+        title: Text(tr('Delete all journal data?')),
         content: Text(
-          'This permanently deletes all $entryCount '
-          '${entryCount == 1 ? 'entry' : 'entries'}, app-private photos, '
-          'calendar highlights, and streak history from this device. '
-          'Your theme, app lock, PIN, and reminder setting will stay.\n\n'
-          'This cannot be undone. Export first if you may want a copy.',
+          tr(
+            'This permanently deletes all {entries}, app-private photos, calendar highlights, and streak history from this device. Your theme, app lock, PIN, and reminder setting will stay.\n\nThis cannot be undone. Export first if you may want a copy.',
+            values: {
+              'entries': trPlural(
+                entryCount,
+                one: '{count} entry',
+                other: '{count} entries',
+              ),
+            },
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Keep my journal'),
+            child: Text(tr('Keep my journal')),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -290,7 +357,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               foregroundColor: Theme.of(context).colorScheme.onError,
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete everything'),
+            child: Text(tr('Delete everything')),
           ),
         ],
       ),
@@ -299,11 +366,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _working = true);
     try {
       await widget.journal.deleteAllJournalData();
-      if (mounted) _message('All journal entries and photos were deleted.');
+      if (mounted) {
+        _message(tr('All journal entries and photos were deleted.'));
+      }
     } catch (error) {
       if (mounted) {
         _message(
-          'Ritual could not finish deleting the journal: $error',
+          tr(
+            'Ritual could not finish deleting the journal: {error}',
+            values: {'error': error},
+          ),
           error: true,
         );
       }
@@ -319,15 +391,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final picked = await AppLockGate.runTrustedInterruption(
         context,
         () => FilePicker.pickFile(
-          dialogTitle: 'Import a Ritual journal',
+          dialogTitle: tr('Import a Ritual journal'),
           type: FileType.custom,
           allowedExtensions: const ['zip'],
         ),
       );
       if (picked == null) return;
       if (picked.size > 1024 * 1024 * 1024 || picked.path == null) {
-        throw const RitualArchiveException(
-          'This ZIP is unavailable or too large to import safely.',
+        throw RitualArchiveException(
+          tr('This ZIP is unavailable or too large to import safely.'),
         );
       }
       String? password;
@@ -350,20 +422,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final confirmed = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Import this journal?'),
+            title: Text(tr('Import this journal?')),
             content: Text(
-              'Ritual verified ${imports.length} '
-              '${imports.length == 1 ? 'entry' : 'entries'} and their photos. '
-              'Existing entries will stay, and exact repeat imports are skipped.',
+              tr(
+                'Ritual verified {entries} and their photos. Existing entries will stay, and exact repeat imports are skipped.',
+                values: {
+                  'entries': trPlural(
+                    imports.length,
+                    one: '{count} entry',
+                    other: '{count} entries',
+                  ),
+                },
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
+                child: Text(tr('Cancel')),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('Import'),
+                child: Text(tr('Import')),
               ),
             ],
           ),
@@ -373,8 +452,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (mounted) {
           _message(
             imported == 0
-                ? 'Everything in that archive was already in Ritual.'
-                : '$imported ${imported == 1 ? 'entry' : 'entries'} imported.',
+                ? tr('Everything in that archive was already in Ritual.')
+                : trPlural(
+                    imported,
+                    one: '{count} entry imported.',
+                    other: '{count} entries imported.',
+                  ),
           );
         }
       } finally {
@@ -383,7 +466,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } on RitualArchiveException catch (error) {
       if (mounted) _message(error.message, error: true);
     } catch (error) {
-      if (mounted) _message('Import failed: $error', error: true);
+      if (mounted) {
+        _message(
+          tr('Import failed: {error}', values: {'error': error}),
+          error: true,
+        );
+      }
     } finally {
       if (mounted) setState(() => _working = false);
     }
@@ -403,35 +491,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return ListenableBuilder(
       listenable: widget.settings,
       builder: (context, _) => Scaffold(
-        appBar: AppBar(title: const Text('Settings')),
+        appBar: AppBar(title: Text(tr('Settings'))),
         body: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
           children: [
-            const _SectionTitle('Appearance'),
+            _SectionTitle(tr('Appearance')),
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Color theme'),
+                    Text(tr('Color theme')),
                     const SizedBox(height: 12),
                     SegmentedButton<ThemeMode>(
-                      segments: const [
+                      segments: [
                         ButtonSegment(
                           value: ThemeMode.system,
-                          label: Text('System'),
-                          icon: Icon(Icons.settings_brightness_outlined),
+                          label: Text(tr('System')),
+                          icon: const Icon(Icons.settings_brightness_outlined),
                         ),
                         ButtonSegment(
                           value: ThemeMode.light,
-                          label: Text('Light'),
-                          icon: Icon(Icons.light_mode_outlined),
+                          label: Text(tr('Light')),
+                          icon: const Icon(Icons.light_mode_outlined),
                         ),
                         ButtonSegment(
                           value: ThemeMode.dark,
-                          label: Text('Dark'),
-                          icon: Icon(Icons.dark_mode_outlined),
+                          label: Text(tr('Dark')),
+                          icon: const Icon(Icons.dark_mode_outlined),
                         ),
                       ],
                       selected: {widget.settings.themeMode},
@@ -442,33 +530,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
             ),
-            const _SectionTitle('Experience'),
+            _SectionTitle(tr('Experience')),
             Card(
               clipBehavior: Clip.antiAlias,
               child: Column(
                 children: [
+                  ListTile(
+                    leading: const Icon(Icons.flag_outlined),
+                    title: Text(tr('Personal intention')),
+                    subtitle: Text(widget.settings.personalIntention.label),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: _choosePersonalIntention,
+                  ),
+                  const Divider(height: 1),
                   SwitchListTile(
                     value: widget.settings.streaksEnabled,
                     onChanged: widget.settings.setStreaksEnabled,
                     secondary: const Icon(Icons.local_fire_department_outlined),
-                    title: const Text('Daily streaks'),
-                    subtitle: const Text(
-                      'Show streak progress and first-entry celebrations. Turning '
-                      'this off does not delete your progress.',
+                    title: Text(tr('Daily streaks')),
+                    subtitle: Text(
+                      tr(
+                        'Show streak progress and first-entry celebrations. Turning this off does not delete your progress.',
+                      ),
                     ),
                   ),
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.auto_awesome_outlined),
-                    title: const Text('Welcome setup'),
-                    subtitle: const Text('Review your experience choices'),
+                    title: Text(tr('Welcome setup')),
+                    subtitle: Text(tr('Review your experience choices')),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: _restartWelcome,
                   ),
                 ],
               ),
             ),
-            const _SectionTitle('Meal reflection'),
+            _SectionTitle(tr('Meal reflection')),
             Card(
               clipBehavior: Clip.antiAlias,
               child: Column(
@@ -477,29 +574,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     value: widget.settings.hungerScaleEnabled,
                     onChanged: widget.settings.setHungerScaleEnabled,
                     secondary: const Icon(Icons.restaurant_menu_rounded),
-                    title: const Text('Hunger before eating'),
-                    subtitle: const Text('Optional five-point check-in'),
+                    title: Text(tr('Hunger before eating')),
+                    subtitle: Text(tr('Optional five-point check-in')),
                   ),
                   const Divider(height: 1),
                   SwitchListTile(
                     value: widget.settings.cravingScaleEnabled,
                     onChanged: widget.settings.setCravingScaleEnabled,
                     secondary: const Icon(Icons.bolt_outlined),
-                    title: const Text('Craving before eating'),
-                    subtitle: const Text('Optional five-point check-in'),
+                    title: Text(tr('Craving before eating')),
+                    subtitle: Text(tr('Optional five-point check-in')),
                   ),
                   const Divider(height: 1),
                   SwitchListTile(
                     value: widget.settings.fullnessScaleEnabled,
                     onChanged: widget.settings.setFullnessScaleEnabled,
                     secondary: const Icon(Icons.spa_outlined),
-                    title: const Text('Fullness after eating'),
-                    subtitle: const Text('Optional five-point check-in'),
+                    title: Text(tr('Fullness after eating')),
+                    subtitle: Text(tr('Optional five-point check-in')),
                   ),
                 ],
               ),
             ),
-            const _SectionTitle('Privacy'),
+            _SectionTitle(tr('Privacy')),
             Card(
               clipBehavior: Clip.antiAlias,
               child: RadioGroup<AppLockMode>(
@@ -507,11 +604,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onChanged: (value) {
                   if (value != null) _chooseLockMode(value);
                 },
-                child: const Column(
+                child: Column(
                   children: [
                     RadioListTile<AppLockMode>(
                       value: AppLockMode.off,
-                      title: Text('No app lock'),
+                      title: Text(tr('No app lock')),
                       secondary: Icon(Icons.lock_open_outlined),
                     ),
                     Divider(height: 1),
@@ -519,19 +616,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       value: AppLockMode.device,
                       title: Row(
                         children: [
-                          Text('Device security'),
+                          Text(tr('Device security')),
                           SizedBox(width: 8),
                           _RecommendedBadge(),
                         ],
                       ),
-                      subtitle: Text('Fingerprint, device PIN, or pattern'),
+                      subtitle: Text(tr('Fingerprint, device PIN, or pattern')),
                       secondary: Icon(Icons.fingerprint_rounded),
                     ),
                     Divider(height: 1),
                     RadioListTile<AppLockMode>(
                       value: AppLockMode.pin,
-                      title: Text('Ritual PIN'),
-                      subtitle: Text('A separate four-digit code'),
+                      title: Text(tr('Ritual PIN')),
+                      subtitle: Text(tr('A separate four-digit code')),
                       secondary: Icon(Icons.pin_outlined),
                     ),
                   ],
@@ -543,8 +640,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               clipBehavior: Clip.antiAlias,
               child: ListTile(
                 leading: const Icon(Icons.policy_outlined),
-                title: const Text('Privacy policy & health disclaimer'),
-                subtitle: const Text('How Ritual handles your journal data'),
+                title: Text(tr('Privacy policy & health disclaimer')),
+                subtitle: Text(tr('How Ritual handles your journal data')),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
@@ -553,7 +650,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
             ),
-            const _SectionTitle('Reminders'),
+            _SectionTitle(tr('Reminders')),
             Card(
               clipBehavior: Clip.antiAlias,
               child: Column(
@@ -562,14 +659,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     value: widget.settings.mealRemindersEnabled,
                     onChanged: _setReminders,
                     secondary: const Icon(Icons.notifications_none_rounded),
-                    title: const Text('Mindful meal reminders'),
-                    subtitle: const Text(
-                      'Local check-ins that automatically skip meals already logged.',
+                    title: Text(tr('Mindful meal reminders')),
+                    subtitle: Text(
+                      tr(
+                        'Local check-ins that automatically skip meals already logged.',
+                      ),
                     ),
                   ),
                   const Divider(height: 1),
                   _ReminderTimeTile(
-                    label: 'Breakfast',
+                    label: tr('Breakfast'),
                     time: _formatMinutes(
                       widget.settings.reminderSchedule.breakfastMinutes,
                     ),
@@ -579,7 +678,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   _ReminderTimeTile(
-                    label: 'Lunch',
+                    label: tr('Lunch'),
                     time: _formatMinutes(
                       widget.settings.reminderSchedule.lunchMinutes,
                     ),
@@ -589,7 +688,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   _ReminderTimeTile(
-                    label: 'Dinner',
+                    label: tr('Dinner'),
                     time: _formatMinutes(
                       widget.settings.reminderSchedule.dinnerMinutes,
                     ),
@@ -599,7 +698,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   _ReminderTimeTile(
-                    label: 'Empty-day check-in',
+                    label: tr('Empty-day check-in'),
                     time: _formatMinutes(
                       widget.settings.reminderSchedule.emptyDayMinutes,
                     ),
@@ -611,7 +710,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
             ),
-            const _SectionTitle('Your data'),
+            _SectionTitle(tr('Your data')),
             Card(
               clipBehavior: Clip.antiAlias,
               child: Column(
@@ -619,10 +718,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ListTile(
                     enabled: !_working,
                     leading: const Icon(Icons.archive_outlined),
-                    title: const Text('Export journal'),
+                    title: Text(tr('Export journal')),
                     subtitle: Text(
-                      '${widget.journal.entries.length} entries, metadata, and '
-                      'photos in a password-protected or standard ZIP',
+                      tr(
+                        '{count} entries, metadata, and photos in a password-protected or standard ZIP',
+                        values: {'count': widget.journal.entries.length},
+                      ),
                     ),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: _exportJournal,
@@ -631,9 +732,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ListTile(
                     enabled: !_working && widget.journal.entries.isNotEmpty,
                     leading: const Icon(Icons.medical_information_outlined),
-                    title: const Text('Export report'),
-                    subtitle: const Text(
-                      'Choose PDF or CSV and a date range - unencrypted',
+                    title: Text(tr('Export report')),
+                    subtitle: Text(
+                      tr('Choose PDF or CSV and a date range - unencrypted'),
                     ),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: _exportReport,
@@ -642,9 +743,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ListTile(
                     enabled: !_working,
                     leading: const Icon(Icons.unarchive_outlined),
-                    title: const Text('Import Ritual ZIP'),
-                    subtitle: const Text(
-                      'Verifies every entry and photo before importing',
+                    title: Text(tr('Import Ritual ZIP')),
+                    subtitle: Text(
+                      tr('Verifies every entry and photo before importing'),
                     ),
                     trailing: _working
                         ? const SizedBox.square(
@@ -662,20 +763,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       color: Theme.of(context).colorScheme.error,
                     ),
                     title: Text(
-                      'Delete all journal data',
+                      tr('Delete all journal data'),
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.error,
                       ),
                     ),
-                    subtitle: const Text(
-                      'Permanently removes every entry, photo, and streak',
+                    subtitle: Text(
+                      tr('Permanently removes every entry, photo, and streak'),
                     ),
                     onTap: _deleteAllJournalData,
                   ),
                 ],
               ),
             ),
-            const _SectionTitle('About Ritual'),
+            _SectionTitle(tr('About Ritual')),
             Card(
               clipBehavior: Clip.antiAlias,
               child: Column(
@@ -685,9 +786,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Icons.favorite_border_rounded,
                       color: RitualColors.terracotta,
                     ),
-                    title: const Text('Support Ritual'),
-                    subtitle: const Text(
-                      'Optional support — Ritual is free forever',
+                    title: Text(tr('Support Ritual')),
+                    subtitle: Text(
+                      tr('Optional support — Ritual is free forever'),
                     ),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => Navigator.of(context).push(
@@ -699,9 +800,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.bug_report_outlined),
-                    title: const Text('Copy debug log'),
-                    subtitle: const Text(
-                      'Recent technical events only — no photos, notes, places, or coordinates',
+                    title: Text(tr('Copy debug log')),
+                    subtitle: Text(
+                      tr(
+                        'Recent technical events only — no photos, notes, places, or coordinates',
+                      ),
                     ),
                     trailing: const Icon(Icons.copy_outlined),
                     onTap: _copyDebugLog,
@@ -716,15 +819,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 color: RitualColors.sage.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(22),
               ),
-              child: const Row(
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.shield_outlined, color: RitualColors.sage),
-                  SizedBox(width: 12),
+                  const Icon(Icons.shield_outlined, color: RitualColors.sage),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Photos and journal data stay inside Ritual unless you '
-                      'explicitly export them. Ritual does not use an account or cloud sync.',
+                      tr(
+                        'Photos and journal data stay inside Ritual unless you explicitly export them. Ritual does not use an account or cloud sync.',
+                      ),
                     ),
                   ),
                 ],
@@ -732,7 +836,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 28),
             Text(
-              'Ritual 1.6 • ${DateFormat.yMMMM().format(DateTime.now())}',
+              tr(
+                'Ritual 1.6 • {month}',
+                values: {
+                  'month': DateFormat.yMMMM(
+                    RitualI18n.localeName,
+                  ).format(DateTime.now()),
+                },
+              ),
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall,
             ),
@@ -774,7 +885,7 @@ class _RecommendedBadge extends StatelessWidget {
       borderRadius: BorderRadius.circular(20),
     ),
     child: Text(
-      'RECOMMENDED',
+      tr('RECOMMENDED'),
       style: Theme.of(context).textTheme.labelSmall?.copyWith(
         color: RitualColors.sage,
         fontWeight: FontWeight.w800,
@@ -862,8 +973,8 @@ class _ReportExportDialogState extends State<_ReportExportDialog> {
         start: _customRange?.start ?? _last30Days.start,
         end: _customRange?.end ?? _last30Days.end,
       ),
-      helpText: 'Choose journal dates',
-      saveText: 'Use dates',
+      helpText: tr('Choose journal dates'),
+      saveText: tr('Use dates'),
     );
     if (!mounted || picked == null) return;
     setState(() {
@@ -874,7 +985,7 @@ class _ReportExportDialogState extends State<_ReportExportDialog> {
 
   String _countLabel(JournalExportRange range) {
     final count = range.count(widget.entries);
-    return '$count ${count == 1 ? 'entry' : 'entries'}';
+    return trPlural(count, one: '{count} entry', other: '{count} entries');
   }
 
   @override
@@ -884,7 +995,7 @@ class _ReportExportDialogState extends State<_ReportExportDialog> {
     final isPdf = _format == JournalExportFormat.pdf;
     return AlertDialog(
       icon: const Icon(Icons.health_and_safety_outlined),
-      title: const Text('Export journal report'),
+      title: Text(tr('Export journal report')),
       content: SizedBox(
         width: 480,
         child: SingleChildScrollView(
@@ -892,19 +1003,19 @@ class _ReportExportDialogState extends State<_ReportExportDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Format', style: Theme.of(context).textTheme.titleSmall),
+              Text(tr('Format'), style: Theme.of(context).textTheme.titleSmall),
               const SizedBox(height: 8),
               SegmentedButton<JournalExportFormat>(
-                segments: const [
+                segments: [
                   ButtonSegment(
                     value: JournalExportFormat.pdf,
-                    label: Text('PDF'),
-                    icon: Icon(Icons.picture_as_pdf_outlined),
+                    label: Text(tr('PDF')),
+                    icon: const Icon(Icons.picture_as_pdf_outlined),
                   ),
                   ButtonSegment(
                     value: JournalExportFormat.csv,
-                    label: Text('CSV'),
-                    icon: Icon(Icons.table_chart_outlined),
+                    label: Text(tr('CSV')),
+                    icon: const Icon(Icons.table_chart_outlined),
                   ),
                 ],
                 selected: {_format},
@@ -914,12 +1025,17 @@ class _ReportExportDialogState extends State<_ReportExportDialog> {
               const SizedBox(height: 8),
               Text(
                 isPdf
-                    ? 'Includes photos and all journal details.'
-                    : 'Includes journal details in one row per entry. Photos are not included.',
+                    ? tr('Includes photos and all journal details.')
+                    : tr(
+                        'Includes journal details in one row per entry. Photos are not included.',
+                      ),
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: 20),
-              Text('Date range', style: Theme.of(context).textTheme.titleSmall),
+              Text(
+                tr('Date range'),
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
               const SizedBox(height: 4),
               RadioGroup<JournalExportRangePreset>(
                 groupValue: _preset,
@@ -930,23 +1046,29 @@ class _ReportExportDialogState extends State<_ReportExportDialog> {
                   children: [
                     RadioListTile<JournalExportRangePreset>(
                       value: JournalExportRangePreset.last7Days,
-                      title: const Text('Last 7 days'),
+                      title: Text(tr('Last 7 days')),
                       subtitle: Text(_countLabel(_last7Days)),
                       contentPadding: EdgeInsets.zero,
                     ),
                     RadioListTile<JournalExportRangePreset>(
                       value: JournalExportRangePreset.last30Days,
-                      title: const Text('Last 30 days'),
+                      title: Text(tr('Last 30 days')),
                       subtitle: Text(_countLabel(_last30Days)),
                       contentPadding: EdgeInsets.zero,
                     ),
                     RadioListTile<JournalExportRangePreset>(
                       value: JournalExportRangePreset.custom,
-                      title: const Text('Custom dates'),
+                      title: Text(tr('Custom dates')),
                       subtitle: Text(
                         _customRange == null
-                            ? 'Choose dates to see the entry count'
-                            : '${_customRange!.displayLabel} • ${_countLabel(_customRange!)}',
+                            ? tr('Choose dates to see the entry count')
+                            : tr(
+                                '{dateRange} • {entries}',
+                                values: {
+                                  'dateRange': _customRange!.displayLabel,
+                                  'entries': _countLabel(_customRange!),
+                                },
+                              ),
                       ),
                       contentPadding: EdgeInsets.zero,
                     ),
@@ -964,8 +1086,17 @@ class _ReportExportDialogState extends State<_ReportExportDialog> {
                 ),
                 child: Text(
                   selectedRange == null
-                      ? 'Choose a custom date range to continue.'
-                      : '$selectedCount ${selectedCount == 1 ? 'entry' : 'entries'} will be exported.',
+                      ? tr('Choose a custom date range to continue.')
+                      : tr(
+                          '{entries} will be exported.',
+                          values: {
+                            'entries': trPlural(
+                              selectedCount,
+                              one: '{count} entry',
+                              other: '{count} entries',
+                            ),
+                          },
+                        ),
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
               ),
@@ -977,7 +1108,9 @@ class _ReportExportDialogState extends State<_ReportExportDialog> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'This export is not encrypted. Save it privately and share it only with people you trust.',
+                      tr(
+                        'This export is not encrypted. Save it privately and share it only with people you trust.',
+                      ),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),
@@ -990,7 +1123,7 @@ class _ReportExportDialogState extends State<_ReportExportDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(tr('Cancel')),
         ),
         FilledButton(
           onPressed: selectedRange == null || selectedCount == 0
@@ -999,7 +1132,7 @@ class _ReportExportDialogState extends State<_ReportExportDialog> {
                   context,
                   _ReportExportSelection(format: _format, range: selectedRange),
                 ),
-          child: Text(isPdf ? 'Create PDF' : 'Create CSV'),
+          child: Text(isPdf ? tr('Create PDF') : tr('Create CSV')),
         ),
       ],
     );
@@ -1042,13 +1175,15 @@ class _ArchiveExportDialogState extends State<_ArchiveExportDialog> {
     final password = _passwordController.text;
     if (password.length < JournalArchiveService.minimumPasswordLength) {
       setState(
-        () => _error =
-            'Use at least ${JournalArchiveService.minimumPasswordLength} characters.',
+        () => _error = tr(
+          'Use at least {count} characters.',
+          values: {'count': JournalArchiveService.minimumPasswordLength},
+        ),
       );
       return;
     }
     if (password != _confirmationController.text) {
-      setState(() => _error = 'The passwords do not match.');
+      setState(() => _error = tr('The passwords do not match.'));
       return;
     }
     Navigator.pop(context, _ArchiveProtection(password: password));
@@ -1061,7 +1196,7 @@ class _ArchiveExportDialogState extends State<_ArchiveExportDialog> {
           ? Icons.enhanced_encryption_outlined
           : Icons.no_encryption_outlined,
     ),
-    title: const Text('Protect this backup'),
+    title: Text(tr('Protect this backup')),
     content: SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1072,19 +1207,19 @@ class _ArchiveExportDialogState extends State<_ArchiveExportDialog> {
             onChanged: (value) {
               if (value != null) setState(() => _mode = value);
             },
-            child: const Column(
+            child: Column(
               children: [
                 RadioListTile<_ArchiveProtectionMode>(
                   contentPadding: EdgeInsets.zero,
                   value: _ArchiveProtectionMode.encrypted,
-                  title: Text('Password-protected ZIP'),
-                  subtitle: Text('Recommended - AES-256 encryption'),
+                  title: Text(tr('Password-protected ZIP')),
+                  subtitle: Text(tr('Recommended - AES-256 encryption')),
                 ),
                 RadioListTile<_ArchiveProtectionMode>(
                   contentPadding: EdgeInsets.zero,
                   value: _ArchiveProtectionMode.standard,
-                  title: Text('Standard ZIP'),
-                  subtitle: Text('Compatible but readable by anyone'),
+                  title: Text(tr('Standard ZIP')),
+                  subtitle: Text(tr('Compatible but readable by anyone')),
                 ),
               ],
             ),
@@ -1096,9 +1231,9 @@ class _ArchiveExportDialogState extends State<_ArchiveExportDialog> {
               obscureText: true,
               autocorrect: false,
               enableSuggestions: false,
-              decoration: const InputDecoration(
-                labelText: 'Export password',
-                helperText: 'At least 12 characters',
+              decoration: InputDecoration(
+                labelText: tr('Export password'),
+                helperText: tr('At least 12 characters'),
               ),
             ),
             const SizedBox(height: 12),
@@ -1108,16 +1243,20 @@ class _ArchiveExportDialogState extends State<_ArchiveExportDialog> {
               autocorrect: false,
               enableSuggestions: false,
               onSubmitted: (_) => _continue(),
-              decoration: const InputDecoration(labelText: 'Confirm password'),
+              decoration: InputDecoration(labelText: tr('Confirm password')),
             ),
             const SizedBox(height: 10),
-            const Text(
-              'Ritual cannot recover this password. You will need it to import the ZIP.',
+            Text(
+              tr(
+                'Ritual cannot recover this password. You will need it to import the ZIP.',
+              ),
             ),
           ] else ...[
             const SizedBox(height: 8),
             Text(
-              'Anyone who opens this ZIP can see its photos, notes, feelings, dates, and saved places.',
+              tr(
+                'Anyone who opens this ZIP can see its photos, notes, feelings, dates, and saved places.',
+              ),
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ],
@@ -1134,9 +1273,9 @@ class _ArchiveExportDialogState extends State<_ArchiveExportDialog> {
     actions: [
       TextButton(
         onPressed: () => Navigator.pop(context),
-        child: const Text('Cancel'),
+        child: Text(tr('Cancel')),
       ),
-      FilledButton(onPressed: _continue, child: const Text('Create ZIP')),
+      FilledButton(onPressed: _continue, child: Text(tr('Create ZIP'))),
     ],
   );
 }
@@ -1164,7 +1303,7 @@ class _ArchivePasswordDialogState extends State<_ArchivePasswordDialog> {
   @override
   Widget build(BuildContext context) => AlertDialog(
     icon: const Icon(Icons.lock_outline_rounded),
-    title: const Text('Encrypted Ritual ZIP'),
+    title: Text(tr('Encrypted Ritual ZIP')),
     content: TextField(
       controller: _controller,
       autofocus: true,
@@ -1172,17 +1311,17 @@ class _ArchivePasswordDialogState extends State<_ArchivePasswordDialog> {
       autocorrect: false,
       enableSuggestions: false,
       onSubmitted: (_) => _continue(),
-      decoration: const InputDecoration(
-        labelText: 'Export password',
-        helperText: 'Use the password chosen when this ZIP was exported.',
+      decoration: InputDecoration(
+        labelText: tr('Export password'),
+        helperText: tr('Use the password chosen when this ZIP was exported.'),
       ),
     ),
     actions: [
       TextButton(
         onPressed: () => Navigator.pop(context),
-        child: const Text('Cancel'),
+        child: Text(tr('Cancel')),
       ),
-      FilledButton(onPressed: _continue, child: const Text('Unlock')),
+      FilledButton(onPressed: _continue, child: Text(tr('Unlock'))),
     ],
   );
 }
@@ -1215,15 +1354,15 @@ class _PinSetupDialogState extends State<_PinSetupDialog> {
       keyboardType: TextInputType.number,
       maxLength: 4,
       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-      decoration: const InputDecoration(
-        labelText: '4-digit PIN',
+      decoration: InputDecoration(
+        labelText: tr('4-digit PIN'),
         counterText: '',
       ),
     ),
     actions: [
       TextButton(
         onPressed: () => Navigator.pop(context),
-        child: const Text('Cancel'),
+        child: Text(tr('Cancel')),
       ),
       FilledButton(
         onPressed: () {
@@ -1231,7 +1370,7 @@ class _PinSetupDialogState extends State<_PinSetupDialog> {
             Navigator.pop(context, _controller.text);
           }
         },
-        child: const Text('Continue'),
+        child: Text(tr('Continue')),
       ),
     ],
   );

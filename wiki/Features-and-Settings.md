@@ -11,6 +11,7 @@
 | Option | Default | Effect |
 | --- | --- | --- |
 | Daily streaks | On | Shows current/best streak, weekday progress, and first-entry celebrations. Turning it off preserves streak history. |
+| Personal intention | Build a mindful pause | Tailors the Today action, journal prompt, insights, and reminder wording. |
 | Welcome setup | Completed after first run | Reopens the guided customization flow. |
 
 ## Meal reflection
@@ -25,6 +26,8 @@ Each scale is independent and off by default. Enabled scales use integer values 
 
 Meal types are Breakfast, Lunch, Dinner, and Snack. Feelings are Happy, Calm, Energized, Comforted, Satisfied, Social, Rushed, Distracted, and Still hungry. Multiple feelings may be selected. Selection changes color and border without adding a checkmark, so neighboring labels do not move.
 
+Notes have no app-imposed character limit and grow vertically for longer reflections.
+
 ## Privacy
 
 | App lock | Behavior |
@@ -37,7 +40,7 @@ The lock waits five seconds after the app is backgrounded. Brief notification-sh
 
 ## Reminders
 
-**Mindful meal reminders** is off by default and requests notification permission when enabled. Breakfast, lunch, dinner, and empty-day times are editable whether reminders are on or off. See [[Reminders and Streaks]] for the scheduling rules.
+**Mindful meal reminders** is off by default and requests notification permission when enabled. Breakfast, lunch, dinner, and empty-day times are editable whether reminders are on or off. Notifications can start photo capture, snooze for 30 minutes, or skip the day. Timing suggestions require the user's approval and never silently replace a selected time. See [[Reminders and Streaks]] for the scheduling rules.
 
 ## Your data
 

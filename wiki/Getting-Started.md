@@ -9,11 +9,16 @@ Download `ritual-latest.apk` from the repository's **Ritual Latest** GitHub rele
 The welcome flow appears once on a new installation and can be reopened from **Settings → Experience → Welcome setup**.
 
 1. **Privacy overview:** explains local storage, no account, and app-private photos.
-2. **Appearance:** choose System, Light, or Dark.
-3. **Reflection:** independently enable hunger, craving, and fullness scales; choose whether to show streaks.
-4. **Rhythm:** optionally request notification permission and choose breakfast, lunch, dinner, and empty-day check-in times.
+2. **Personal intention:** choose Remember meals, Notice hunger and fullness, Understand feelings around food, Build a mindful pause, or Notice journal patterns.
+3. **Appearance:** choose System, Light, or Dark.
+4. **Reflection:** independently enable hunger, craving, and fullness scales; choose whether to show streaks.
+5. **Rhythm:** optionally request notification permission and choose breakfast, lunch, dinner, and empty-day check-in times.
 
 **Skip setup** keeps the defaults: system theme; streaks on; reflection scales and reminders off. Every choice remains editable in Settings.
+
+## Today action
+
+The top of the Journal presents one clear action based on the selected personal intention. Before the first entry it starts capture; after an entry is saved it becomes a compact count of today's recorded moments.
 
 ## Record a meal
 

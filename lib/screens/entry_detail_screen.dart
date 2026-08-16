@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../controllers/journal_controller.dart';
 import '../controllers/settings_controller.dart';
+import '../l10n/ritual_i18n.dart';
 import '../models/meal_entry.dart';
 import '../theme/ritual_theme.dart';
 import '../widgets/meal_photo.dart';
@@ -37,7 +38,7 @@ class EntryDetailScreen extends StatelessWidget {
           appBar: AppBar(
             actions: [
               IconButton(
-                tooltip: 'Edit moment',
+                tooltip: tr('Edit moment'),
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute<Object?>(
                     builder: (_) => MealEditorScreen(
@@ -51,7 +52,7 @@ class EntryDetailScreen extends StatelessWidget {
                 icon: const Icon(Icons.edit_outlined),
               ),
               IconButton(
-                tooltip: 'Delete moment',
+                tooltip: tr('Delete moment'),
                 onPressed: () => _confirmDelete(context, currentEntry),
                 icon: const Icon(Icons.delete_outline),
               ),
@@ -72,9 +73,9 @@ class EntryDetailScreen extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                DateFormat(
-                  'EEEE, MMMM d · h:mm a',
-                ).format(currentEntry.createdAt),
+                DateFormat.MMMMEEEEd(
+                  RitualI18n.localeName,
+                ).add_jm().format(currentEntry.createdAt),
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
               if (currentEntry.feelings.isNotEmpty) ...[
@@ -90,7 +91,7 @@ class EntryDetailScreen extends StatelessWidget {
                           size: 8,
                           color: RitualColors.terracotta,
                         ),
-                        label: Text(feeling),
+                        label: Text(tr(feeling)),
                       ),
                   ],
                 ),
@@ -105,17 +106,17 @@ class EntryDetailScreen extends StatelessWidget {
                   children: [
                     if (currentEntry.hungerLevel != null)
                       _ScaleChip(
-                        label: 'Hunger before',
+                        label: tr('Hunger before'),
                         value: currentEntry.hungerLevel!,
                       ),
                     if (currentEntry.cravingLevel != null)
                       _ScaleChip(
-                        label: 'Craving before',
+                        label: tr('Craving before'),
                         value: currentEntry.cravingLevel!,
                       ),
                     if (currentEntry.fullnessLevel != null)
                       _ScaleChip(
-                        label: 'Fullness after',
+                        label: tr('Fullness after'),
                         value: currentEntry.fullnessLevel!,
                       ),
                   ],
@@ -124,7 +125,7 @@ class EntryDetailScreen extends StatelessWidget {
               if (currentEntry.note.isNotEmpty) ...[
                 const SizedBox(height: 26),
                 Text(
-                  'Reflection',
+                  tr('Reflection'),
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 8),
@@ -162,18 +163,20 @@ class EntryDetailScreen extends StatelessWidget {
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete this moment?'),
-        content: const Text(
-          'Its photo and reflection will be removed from Ritual permanently.',
+        title: Text(tr('Delete this moment?')),
+        content: Text(
+          tr(
+            'Its photo and reflection will be removed from Ritual permanently.',
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Keep it'),
+            child: Text(tr('Keep it')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
+            child: Text(tr('Delete')),
           ),
         ],
       ),
@@ -193,6 +196,8 @@ class _ScaleChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Chip(
     avatar: const Icon(Icons.tune_rounded, size: 17),
-    label: Text('$label $value/5'),
+    label: Text(
+      tr('{label} {value}/5', values: {'label': label, 'value': value}),
+    ),
   );
 }

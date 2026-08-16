@@ -39,7 +39,10 @@ Before submitting a pull request, run:
 ```sh
 flutter analyze
 flutter test
+dart run tool/localization_tool.dart check
 ```
+
+Volunteer translators can add a locale without changing app screens or website pages. Follow the [translation guide](wiki/Translations-and-Languages.md), edit the canonical files in `translations/`, and preserve every `{placeholder}` exactly.
 
 Do not use a release keystore for local development. A debug-signed local APK is an unofficial build and cannot update an installation signed with Ritual's private release key.
 

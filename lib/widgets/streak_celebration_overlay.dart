@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../l10n/ritual_i18n.dart';
 import '../theme/ritual_theme.dart';
 
 class StreakCelebrationOverlay extends StatefulWidget {
@@ -97,7 +98,7 @@ class _StreakCelebrationOverlayState extends State<StreakCelebrationOverlay> {
                     children: [
                       if (celebration.milestone)
                         Text(
-                          'MILESTONE',
+                          tr('MILESTONE'),
                           style: Theme.of(context).textTheme.labelSmall
                               ?.copyWith(
                                 color: Colors.white.withValues(alpha: 0.82),
@@ -134,7 +135,7 @@ class _StreakCelebrationOverlayState extends State<StreakCelebrationOverlay> {
                         ? Colors.white
                         : colors.onSurface,
                   ),
-                  child: const Text('Skip'),
+                  child: Text(tr('Skip')),
                 ),
               ],
             ),
@@ -158,34 +159,34 @@ class StreakCelebration {
 
   factory StreakCelebration.forStreak(int streak) {
     return switch (streak) {
-      7 => const StreakCelebration(
-        title: 'Seven days of showing up',
-        message: 'A full week of noticing what nourishes you.',
+      7 => StreakCelebration(
+        title: tr('Seven days of showing up'),
+        message: tr('A full week of noticing what nourishes you.'),
         milestone: true,
       ),
-      30 => const StreakCelebration(
-        title: 'Thirty days, gently gathered',
-        message: 'A month of meals remembered with care.',
+      30 => StreakCelebration(
+        title: tr('Thirty days, gently gathered'),
+        message: tr('A month of meals remembered with care.'),
         milestone: true,
       ),
-      100 => const StreakCelebration(
-        title: 'One hundred mindful days',
-        message: 'Your small daily ritual has become something lasting.',
+      100 => StreakCelebration(
+        title: tr('One hundred mindful days'),
+        message: tr('Your small daily ritual has become something lasting.'),
         milestone: true,
       ),
-      365 => const StreakCelebration(
-        title: 'A year of noticing',
-        message: 'Three hundred sixty-five days of your life at the table.',
+      365 => StreakCelebration(
+        title: tr('A year of noticing'),
+        message: tr('Three hundred sixty-five days of your life at the table.'),
         milestone: true,
       ),
-      1 => const StreakCelebration(
-        title: 'Your streak begins',
-        message: 'The first moment of today is safely in your journal.',
+      1 => StreakCelebration(
+        title: tr('Your streak begins'),
+        message: tr('The first moment of today is safely in your journal.'),
         milestone: false,
       ),
       _ => StreakCelebration(
-        title: '$streak day streak',
-        message: 'Today’s first moment keeps your ritual going.',
+        title: tr('{count} day streak', values: {'count': streak}),
+        message: tr('Today’s first moment keeps your ritual going.'),
         milestone: false,
       ),
     };

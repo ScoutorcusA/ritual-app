@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ritual/models/meal_entry.dart';
+import 'package:ritual/models/personal_intention.dart';
 import 'package:ritual/services/meal_reminder_service.dart';
 
 void main() {
@@ -94,6 +95,32 @@ void main() {
         DateTime(2026, 8, 12, 22),
       ]),
     );
+  });
+
+  test('skips every reminder on a day the user paused', () {
+    final reminders = planner.plan(
+      entries: const [],
+      now: DateTime(2026, 8, 12, 8),
+      days: 2,
+      skippedDay: DateTime(2026, 8, 12),
+    );
+
+    expect(
+      reminders.any((reminder) => reminder.scheduledAt.day == 12),
+      isFalse,
+    );
+    expect(reminders.any((reminder) => reminder.scheduledAt.day == 13), isTrue);
+  });
+
+  test('personal intention changes reminder wording', () {
+    final reminders = planner.plan(
+      entries: const [],
+      now: DateTime(2026, 8, 12, 8),
+      days: 1,
+      intention: PersonalIntention.noticeHungerFullness,
+    );
+
+    expect(reminders.first.body, contains('body cue'));
   });
 }
 
