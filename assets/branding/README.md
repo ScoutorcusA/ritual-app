@@ -21,4 +21,4 @@ The first command creates the PNG masters, high-resolution exports, complete fut
 
 Do not add text, a status dot, gradients, shadows, or photographic detail to the primary mark. The camera corners, bowl, and steam should remain readable at small sizes.
 
-The Ritual name, logo, icon, and visual identity are governed by [`TRADEMARKS.md`](../../TRADEMARKS.md), not the MPL 2.0 source-code license.
+The original artwork in this directory is licensed under CC BY 4.0 as described in [`ASSET_LICENSE.md`](../../ASSET_LICENSE.md). Use of the Ritual name, logo, icon, and visual identity is also governed by [`TRADEMARKS.md`](../../TRADEMARKS.md).

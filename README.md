@@ -87,7 +87,7 @@ Please use synthetic journal content in screenshots, exports, tests, and bug rep
 
 - Detailed behavior, development, signing, release, and Google Play guidance: [Ritual wiki](https://github.com/ScoutorcusA/ritual-app/wiki)
 - Source license: [Mozilla Public License 2.0](LICENSE)
-- Name, logo, and visual identity: [Trademark policy](TRADEMARKS.md)
+- Name, logo, and visual identity: [Trademark policy](TRADEMARKS.md) and [CC BY 4.0 asset license](ASSET_LICENSE.md)
 - Maintainer-published packages: [Official builds](OFFICIAL_BUILDS.md)
 - Website source and deployment: [`web/`](web/)
 

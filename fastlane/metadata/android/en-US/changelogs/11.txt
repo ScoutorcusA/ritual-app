@@ -1,0 +1,7 @@
+Initial F-Droid listing metadata for Ritual 1.6.0.
+
+* Private, on-device meal photo journaling
+* Feelings, body cues, reflections, and pattern insights
+* Local reminders and optional app lock
+* ZIP backup plus PDF and CSV exports
+* No account, ads, analytics, subscription, or cloud journal

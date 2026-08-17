@@ -1,0 +1,18 @@
+Ritual is a private, mindful food photo journal for Android. It helps you remember meals, reflect on feelings and body cues, and notice journal patterns without calorie counting, food scores, or judgment.
+
+Everything stays on your device. Ritual has no account, cloud journal, advertising, analytics SDK, subscription, or feature paywall.
+
+Features:
+
+* Capture breakfast, lunch, dinner, and snacks as private meal photos.
+* Add feelings, reflections, hunger, craving, fullness, and an optional broad place label.
+* Revisit daily journals, a gallery, a calendar, streaks, and journal-pattern insights.
+* Schedule local meal reminders that skip meals already photographed.
+* Lock the app with device authentication or a separate Ritual PIN.
+* Export complete ZIP backups or date-filtered PDF and CSV reports.
+* Create privacy-conscious share cards that omit notes, feelings, dates, and places.
+* Choose light, dark, or system appearance and a personal intention.
+
+Journal entries and captured photos remain in Android app-private storage. Approximate location is requested only when you ask for it, and Ritual stores a city-and-country label instead of newly obtained coordinates. Exports leave private app storage only when you explicitly create or share them.
+
+Ritual is free and open-source software licensed under the Mozilla Public License 2.0.

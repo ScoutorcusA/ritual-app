@@ -1,8 +1,8 @@
 # Ritual Trademark Policy
 
-The Ritual source code is available under the Mozilla Public License 2.0. That license does not grant permission to use Ritual's trademarks or imply that a modified build is endorsed by the Ritual project.
+The Ritual source code is available under the Mozilla Public License 2.0. Ritual's original brand assets are separately available under the Creative Commons Attribution 4.0 International license as described in [`ASSET_LICENSE.md`](ASSET_LICENSE.md). Copyright permission to copy those assets does not by itself grant trademark rights or imply that a modified build is endorsed by the Ritual project.
 
-## Reserved brand assets
+## Reserved trademarks
 
 The following are reserved to the Ritual project and its maintainer:
 
@@ -11,7 +11,20 @@ The following are reserved to the Ritual project and its maintainer:
 - Confusingly similar names, logos, icons, and visual treatments
 - Ritual's distinctive visual identity in store listings, websites, and promotional material
 
-These brand assets are not licensed under the MPL 2.0 merely because they appear in this repository.
+The MPL 2.0 source-code license does not grant trademark rights merely because these marks appear in the repository.
+
+## Unmodified redistribution
+
+Package repositories, mirrors, archives, and other distributors may use the Ritual name, logo, icon, screenshots, and listing metadata to identify and redistribute an unmodified build made from this repository's source code. This permission includes F-Droid and other free-software repositories.
+
+The distributor must:
+
+- identify the source revision used for the build;
+- state when the package was built or signed by the distributor rather than the Ritual maintainer;
+- preserve the app's copyright, source-license, privacy, and attribution notices; and
+- avoid implying that a distributor-signed package carries the maintainer's release signature.
+
+This permission is limited to truthful identification of an unmodified Ritual distribution. It does not authorize use of the Ritual marks for a modified app, a separate service, or an unrelated product.
 
 ## Uses that do not require permission
 
@@ -37,9 +50,9 @@ It must also state clearly that it is an independent project based on Ritual. It
 
 Contributing code does not transfer ownership of the contributor's pre-existing marks, transfer ownership of the Ritual marks, or grant a trademark license.
 
-## Official builds
+## Official and repository builds
 
-The rules for identifying official Ritual packages are in [OFFICIAL_BUILDS.md](OFFICIAL_BUILDS.md). In short, only maintainer-published packages signed with Ritual's private release key may be described as official Ritual builds.
+The rules for identifying Ritual packages are in [OFFICIAL_BUILDS.md](OFFICIAL_BUILDS.md). Maintainer-published packages signed with Ritual's private release key may be described as official maintainer builds. Authorized repositories may distribute unmodified packages under the Ritual name, but must identify their own build and signing provenance.
 
 ## Questions
 
