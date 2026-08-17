@@ -14,16 +14,16 @@ Then visit `http://localhost:8080`.
 
 ## Host with GitHub Pages
 
-The repository includes a manually triggered `Deploy Ritual website` workflow.
+The repository includes a `Deploy Ritual website` workflow. It deploys automatically whenever files under `/web` are pushed to `main`, and it can also be started manually.
 
 1. In GitHub, open **Settings → Pages** and select **GitHub Actions** as the source.
-2. Open **Actions → Deploy Ritual website → Run workflow**.
-3. In the Pages settings, enter `ritualapp.nishkamk.com` as the custom domain and enable HTTPS.
-4. At the DNS provider for `nishkamk.com`, add a `CNAME` record named `ritualapp` pointing to `ScoutorcusA.github.io`.
+2. Push this repository to `main`. The website workflow will run automatically. To republish without changing a file, open **Actions → Deploy Ritual website → Run workflow**.
+3. At the DNS provider for `nishkamk.com`, add a `CNAME` record named `ritualapp` pointing to `ScoutorcusA.github.io`.
+4. In the Pages settings, enter `ritualapp.nishkamk.com` as the custom domain and enable HTTPS after GitHub confirms the DNS record.
 
 GitHub recommends verifying `nishkamk.com` in the account’s Pages settings before adding the custom domain, which helps prevent domain-takeover mistakes.
 
-The site and Android app can live in the same repository. The website deploy only uploads `/web`; it does not package or modify the Flutter app.
+The site and Android app can live in the same repository. The website deploy validates and uploads only `/web`; it does not package or modify the Flutter app. App-only commits do not trigger a website deployment.
 
 ## Translations
 
