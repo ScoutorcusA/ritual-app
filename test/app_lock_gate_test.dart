@@ -115,6 +115,45 @@ void main() {
     expect(find.text('Private journal entry'), findsOneWidget);
     expect(find.text('Your journal is private'), findsNothing);
   });
+
+  testWidgets('covers routes pushed above the home page when locked', (
+    tester,
+  ) async {
+    final settings = _FakeSettingsController();
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: (context, child) => AppLockGate(
+          settings: settings,
+          child: child ?? const SizedBox.shrink(),
+        ),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: FilledButton(
+              onPressed: () => Navigator.of(context).push<void>(
+                MaterialPageRoute<void>(
+                  builder: (_) =>
+                      const Scaffold(body: Text('Private settings content')),
+                ),
+              ),
+              child: const Text('Open settings'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('Private settings content'), findsOneWidget);
+
+    settings.enableDeviceLockForTest();
+    await tester.pump();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await tester.pump(const Duration(seconds: 5));
+
+    expect(find.text('Private settings content'), findsNothing);
+    expect(find.text('Your journal is private'), findsOneWidget);
+  });
 }
 
 class _FakeSettingsController extends SettingsController {

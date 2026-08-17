@@ -215,6 +215,7 @@ class _AppLockGateState extends State<AppLockGate> {
     final pinMode = widget.settings.lockMode == AppLockMode.pin;
     final remaining = _blockedUntil?.difference(DateTime.now()).inSeconds;
     final lockScreen = Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(

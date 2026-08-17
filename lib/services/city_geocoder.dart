@@ -3,8 +3,9 @@ import 'package:flutter/services.dart';
 import '../l10n/ritual_i18n.dart';
 
 class CityGeocoderException implements Exception {
-  const CityGeocoderException(this.message);
+  const CityGeocoderException(this.code, this.message);
 
+  final String code;
   final String message;
 
   @override
@@ -29,16 +30,22 @@ class CityGeocoder {
       });
       if (label == null || label.trim().isEmpty) {
         throw CityGeocoderException(
+          'no_city',
           tr('Android did not return a city for this area.'),
         );
       }
       return label.trim();
     } on PlatformException catch (error) {
-      throw CityGeocoderException(
-        error.message?.trim().isNotEmpty == true
-            ? error.message!.trim()
-            : tr('Android could not name this area.'),
-      );
+      throw CityGeocoderException(error.code, switch (error.code) {
+        'geocoder_unavailable' => tr(
+          'Android still reports that its place-name service is unavailable. On GrapheneOS, select GrapheneOS server under Location services > Geocoder, then restart the phone once.',
+        ),
+        'no_city' => tr('Android did not return a city for this area.'),
+        _ =>
+          error.message?.trim().isNotEmpty == true
+              ? error.message!.trim()
+              : tr('Android could not name this area.'),
+      });
     }
   }
 }

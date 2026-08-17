@@ -109,15 +109,16 @@ class _RitualAppState extends State<RitualApp> with WidgetsBindingObserver {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        home: AppLockGate(
+        home: widget.settings.onboardingComplete
+            ? RitualShell(
+                controller: _controller,
+                settings: widget.settings,
+                reminders: widget.reminders,
+              )
+            : WelcomeScreen(settings: widget.settings),
+        builder: (context, child) => AppLockGate(
           settings: widget.settings,
-          child: widget.settings.onboardingComplete
-              ? RitualShell(
-                  controller: _controller,
-                  settings: widget.settings,
-                  reminders: widget.reminders,
-                )
-              : WelcomeScreen(settings: widget.settings),
+          child: child ?? const SizedBox.shrink(),
         ),
       ),
     );

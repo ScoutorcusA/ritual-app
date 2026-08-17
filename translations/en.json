@@ -61,6 +61,7 @@
     "Android did not allow Ritual to send reminders. You can allow notifications in Ritual’s Android settings, then turn reminders on.": "Android did not allow Ritual to send reminders. You can allow notifications in Ritual’s Android settings, then turn reminders on.",
     "Android did not find a location within 30 seconds. Try near a window, or confirm that Location is on in Android settings.": "Android did not find a location within 30 seconds. Try near a window, or confirm that Location is on in Android settings.",
     "Android did not return a city for this area.": "Android did not return a city for this area.",
+    "Android still reports that its place-name service is unavailable. On GrapheneOS, select GrapheneOS server under Location services > Geocoder, then restart the phone once.": "Android still reports that its place-name service is unavailable. On GrapheneOS, select GrapheneOS server under Location services > Geocoder, then restart the phone once.",
     "Android’s place-name service did not respond. Enter your city manually, or try again later.": "Android’s place-name service did not respond. Enter your city manually, or try again later.",
     "Any feeling": "Any feeling",
     "Anyone who opens this ZIP can see its photos, notes, feelings, dates, and saved places.": "Anyone who opens this ZIP can see its photos, notes, feelings, dates, and saved places.",

@@ -197,7 +197,7 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
         unawaited(
           DebugLogService.instance.record(
             'location',
-            'city lookup failed: ${error.message}',
+            'city lookup failed: code=${error.code}; ${error.message}',
           ),
         );
         throw _LocationIssue(

@@ -145,15 +145,10 @@ class MainActivity : FlutterFragmentActivity() {
         longitude: Double,
         result: MethodChannel.Result,
     ) {
-        if (!Geocoder.isPresent()) {
-            result.error(
-                "geocoder_unavailable",
-                "This Android device does not have a place-name service.",
-                null,
-            )
-            return
-        }
-
+        // Some Android variants can report a stale availability value after the
+        // user enables a geocoder. Attempt the lookup every time and use the
+        // availability flag only to make a failure more specific.
+        val geocoderReportedPresent = Geocoder.isPresent()
         val geocoder = Geocoder(applicationContext, Locale.getDefault())
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             try {
@@ -169,17 +164,24 @@ class MainActivity : FlutterFragmentActivity() {
                         override fun onError(errorMessage: String?) {
                             runOnUiThread {
                                 result.error(
-                                    "geocoder_failed",
-                                    errorMessage?.takeIf { it.isNotBlank() }
-                                        ?: "Android could not name this area.",
-                                    null,
+                                    if (geocoderReportedPresent) {
+                                        "geocoder_failed"
+                                    } else {
+                                        "geocoder_unavailable"
+                                    },
+                                    errorMessage?.takeIf { it.isNotBlank() },
+                                    mapOf("reportedPresent" to geocoderReportedPresent),
                                 )
                             }
                         }
                     },
                 )
-            } catch (error: IllegalArgumentException) {
-                result.error("geocoder_failed", error.message, null)
+            } catch (error: Exception) {
+                result.error(
+                    if (geocoderReportedPresent) "geocoder_failed" else "geocoder_unavailable",
+                    error.message,
+                    mapOf("reportedPresent" to geocoderReportedPresent),
+                )
             }
             return
         }
@@ -192,20 +194,26 @@ class MainActivity : FlutterFragmentActivity() {
             } catch (error: IOException) {
                 runOnUiThread {
                     result.error(
-                        "geocoder_failed",
-                        error.message ?: "Android could not name this area.",
-                        null,
+                        if (geocoderReportedPresent) "geocoder_failed" else "geocoder_unavailable",
+                        error.message,
+                        mapOf("reportedPresent" to geocoderReportedPresent),
                     )
                 }
             } catch (error: IllegalArgumentException) {
-                runOnUiThread { result.error("geocoder_failed", error.message, null) }
+                runOnUiThread {
+                    result.error(
+                        if (geocoderReportedPresent) "geocoder_failed" else "geocoder_unavailable",
+                        error.message,
+                        mapOf("reportedPresent" to geocoderReportedPresent),
+                    )
+                }
             }
         }
     }
 
     private fun completeCityResult(address: Address?, result: MethodChannel.Result) {
         if (address == null) {
-            result.error("no_city", "Android found no city for this area.", null)
+            result.error("no_city", null, null)
             return
         }
         val city = listOf(
@@ -216,7 +224,7 @@ class MainActivity : FlutterFragmentActivity() {
         val country = address.countryName?.takeIf { it.isNotBlank() }?.trim()
         val label = listOfNotNull(city, country).distinct().joinToString(", ")
         if (label.isBlank()) {
-            result.error("no_city", "Android found no city for this area.", null)
+            result.error("no_city", null, null)
         } else {
             result.success(label)
         }
