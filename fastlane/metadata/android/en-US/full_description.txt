@@ -8,7 +8,7 @@ Features:
 * Add feelings, reflections, hunger, craving, fullness, and an optional broad place label.
 * Revisit daily journals, a gallery, a calendar, streaks, and journal-pattern insights.
 * Schedule local meal reminders that skip meals already photographed.
-* Lock the app with device authentication or a separate Ritual PIN.
+* Lock the app with Android device authentication.
 * Export complete ZIP backups or date-filtered PDF and CSV reports.
 * Create privacy-conscious share cards that omit notes, feelings, dates, and places.
 * Choose light, dark, or system appearance and a personal intention.

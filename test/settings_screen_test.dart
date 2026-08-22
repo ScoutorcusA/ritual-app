@@ -52,8 +52,11 @@ void main() {
     expect(find.text('Craving before eating'), findsOneWidget);
     expect(find.text('Fullness after eating'), findsOneWidget);
 
-    await tester.scrollUntilVisible(find.text('Device security'), 300);
+    await tester.drag(find.byType(ListView), const Offset(0, -180));
+    await tester.pump();
+    expect(find.text('Device security'), findsOneWidget);
     expect(find.text('RECOMMENDED'), findsOneWidget);
+    expect(find.text('Ritual PIN'), findsNothing);
 
     await tester.scrollUntilVisible(
       find.text('Privacy policy & health disclaimer'),
@@ -131,7 +134,10 @@ void main() {
     await tester.tap(find.text('Delete all journal data'));
     await tester.pumpAndSettle();
     expect(find.text('Delete all journal data?'), findsOneWidget);
-    expect(find.textContaining('Your theme, app lock, PIN'), findsOneWidget);
+    expect(
+      find.textContaining('Your theme, app lock, and reminder'),
+      findsOneWidget,
+    );
 
     await tester.tap(find.text('Delete everything'));
     await tester.pumpAndSettle();

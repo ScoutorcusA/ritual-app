@@ -19,13 +19,13 @@ Depending on the features a user chooses, Ritual may access or store:
 - an optional city-and-country label; older or imported entries may contain coordinates created by earlier versions;
 - app preferences, reminder times, streak progress, and calendar highlights;
 - up to 120 timestamped technical diagnostic events, excluding journal content, photos, feelings, place names, and coordinates;
-- an optional four-digit Ritual PIN hash and salt, or the result of Android device authentication.
+- the result of Android device authentication when app lock is enabled.
 
 This information is used only to provide the journal, Browse views, local insights, reminders, streaks, security, and exports requested by the user.
 
 ## Local storage and transmission
 
-Journal records are stored in a SQLite database inside Ritual's Android application sandbox. Captured photographs are copied into app-private storage and are not added to Android's shared photo gallery. Preferences remain on the device, and Ritual PIN material is stored through Android-backed secure storage.
+Journal records are stored in a SQLite database inside Ritual's Android application sandbox. Captured photographs are copied into app-private storage and are not added to Android's shared photo gallery. Preferences remain on the device.
 
 Ritual does not transmit journal entries, photographs, ratings, notes, coordinates, identifiers, diagnostics, or usage activity to Ritual or to advertising or analytics companies. The release application does not request general internet access. The user can explicitly place the diagnostics log on the Android clipboard with **Copy debug log** and then controls where it is pasted.
 
@@ -60,7 +60,7 @@ Because Ritual has no user accounts or server-side journal database, there is no
 
 ## Security
 
-Ritual relies on Android's application sandbox and offers optional device authentication or a separate Ritual PIN. Android backup is disabled. These safeguards reduce unauthorized access but no device or storage system can be guaranteed completely secure. Ritual's local database and photographs are not individually encrypted by the app. Password-protected ZIP backups are encrypted; PDF, CSV, and standard ZIP exports are not.
+Ritual relies on Android's application sandbox and offers optional device authentication. Android backup is disabled. These safeguards reduce unauthorized access but no device or storage system can be guaranteed completely secure. Ritual's local database and photographs are not individually encrypted by the app. Password-protected ZIP backups are encrypted; PDF, CSV, and standard ZIP exports are not.
 
 ## Health information and disclaimer
 

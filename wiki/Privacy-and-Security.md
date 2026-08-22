@@ -8,7 +8,6 @@ Ritual has no login, backend, cloud sync, advertisements, subscriptions, analyti
 - private photo directory: `ritual_photos/`
 - ordinary preferences: theme, reminder state/times, streak display, reflection toggles, onboarding completion
 - a bounded diagnostics log containing recent technical outcomes, with no journal content, photos, place names, or coordinates
-- secure storage: Ritual PIN salt and repeated SHA-256 hash
 
 Captured files are copied into the app-private documents directory rather than Android shared media storage, so they do not appear in Gallery. Android backup is disabled. Uninstalling the app removes local journal data unless the user first exports it.
 
@@ -25,7 +24,7 @@ The diagnostics log keeps at most 120 timestamped technical events in ordinary a
 
 ## App lock
 
-Device security delegates authentication to Android. Ritual never receives the fingerprint or the device credential. The separate Ritual PIN must be exactly four digits. Its random 16-byte salt and derived hash are stored through secure storage; the plaintext PIN is not saved. Comparison avoids early exit, and five failures trigger a 30-second cooldown.
+Device security delegates authentication to Android. Ritual never receives the fingerprint or the device credential. When app lock is enabled, Ritual immediately replaces private screens with a privacy cover whenever the app is no longer active and dismisses private text input. Returning after five seconds or longer requires Android device authentication.
 
 The app locks after remaining backgrounded for five seconds. Camera capture is explicitly treated as trusted. The lock surface replaces the journal instead of drawing transparently over it, and the native Android privacy shield is enabled whenever app lock is on.
 

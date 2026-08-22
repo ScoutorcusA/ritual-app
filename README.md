@@ -27,7 +27,7 @@ Ritual works on-device with no account, cloud journal, advertising, analytics SD
 - Add feelings, long reflections, hunger, craving, fullness, and an optional broad place label.
 - Revisit daily photo journals, a gallery, a calendar, streaks, and journal-pattern insights.
 - Use local reminders that skip meals already photographed and suggest—but never silently apply—time changes.
-- Lock the whole app with device authentication or a separate Ritual PIN.
+- Lock the whole app with Android device authentication.
 - Export complete ZIP backups or create date-filtered PDF and CSV reports.
 - Create privacy-conscious share cards without notes, feelings, dates, or places.
 - Choose light, dark, or system appearance and a personal intention for prompts and reminders.

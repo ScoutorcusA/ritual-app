@@ -1,7 +1,3 @@
-import 'dart:convert';
-import 'dart:math';
-
-import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
@@ -11,7 +7,7 @@ import '../l10n/ritual_i18n.dart';
 import '../models/personal_intention.dart';
 import '../services/meal_reminder_service.dart';
 
-enum AppLockMode { off, device, pin }
+enum AppLockMode { off, device }
 
 enum ReminderToggleResult { enabled, disabled, permissionDenied, unavailable }
 
@@ -44,7 +40,6 @@ class SettingsController extends ChangeNotifier {
   static const _personalIntentionKey = 'personal_intention';
   static const _skippedReminderDayKey = 'skipped_reminder_day';
   static const _adaptiveDismissedPrefix = 'adaptive_reminder_dismissed_';
-  static const _hashRounds = 50000;
 
   final SharedPreferencesAsync _preferences;
   final FlutterSecureStorage _secureStorage;
@@ -85,18 +80,19 @@ class SettingsController extends ChangeNotifier {
             .firstOrNull ??
         ThemeMode.system;
     final storedLock = await _preferences.getString(_lockModeKey);
-    _lockMode =
-        AppLockMode.values
-            .where((mode) => mode.name == storedLock)
-            .firstOrNull ??
-        AppLockMode.off;
-    if (_lockMode == AppLockMode.pin) {
-      final hash = await _secureStorage.read(key: _pinHashKey);
-      final salt = await _secureStorage.read(key: _pinSaltKey);
-      if (hash == null || salt == null) {
-        _lockMode = AppLockMode.off;
-        await _preferences.setString(_lockModeKey, _lockMode.name);
-      }
+    if (storedLock == 'pin') {
+      // Earlier versions offered a separate four-digit Ritual PIN. Migrate
+      // those users fail-closed to Android device authentication instead of
+      // silently removing their journal protection.
+      _lockMode = AppLockMode.device;
+      await _preferences.setString(_lockModeKey, _lockMode.name);
+      await _deleteLegacyPinMaterial();
+    } else {
+      _lockMode =
+          AppLockMode.values
+              .where((mode) => mode.name == storedLock)
+              .firstOrNull ??
+          AppLockMode.off;
     }
     _mealRemindersEnabled =
         await _preferences.getBool(_mealRemindersKey) ?? false;
@@ -171,34 +167,6 @@ class SettingsController extends ChangeNotifier {
     notifyListeners();
     await _preferences.setString(_lockModeKey, _lockMode.name);
     return true;
-  }
-
-  Future<void> setPin(String pin) async {
-    if (!RegExp(r'^\d{4}$').hasMatch(pin)) {
-      throw FormatException(tr('PIN must contain exactly four digits.'));
-    }
-    final random = Random.secure();
-    final saltBytes = List<int>.generate(16, (_) => random.nextInt(256));
-    final salt = base64UrlEncode(saltBytes);
-    final hash = _hashPin(pin, salt);
-    await _secureStorage.write(key: _pinSaltKey, value: salt);
-    await _secureStorage.write(key: _pinHashKey, value: hash);
-    _lockMode = AppLockMode.pin;
-    notifyListeners();
-    await _preferences.setString(_lockModeKey, _lockMode.name);
-  }
-
-  Future<bool> verifyPin(String pin) async {
-    final salt = await _secureStorage.read(key: _pinSaltKey);
-    final expected = await _secureStorage.read(key: _pinHashKey);
-    if (salt == null || expected == null) return false;
-    final actual = _hashPin(pin, salt);
-    var difference = actual.length ^ expected.length;
-    final length = min(actual.length, expected.length);
-    for (var index = 0; index < length; index++) {
-      difference |= actual.codeUnitAt(index) ^ expected.codeUnitAt(index);
-    }
-    return difference == 0;
   }
 
   Future<void> disableLock() async {
@@ -337,12 +305,9 @@ class SettingsController extends ChangeNotifier {
     await _preferences.setBool(_cravingScaleKey, value);
   }
 
-  String _hashPin(String pin, String salt) {
-    var digest = sha256.convert(utf8.encode('$salt:$pin')).bytes;
-    for (var round = 1; round < _hashRounds; round++) {
-      digest = sha256.convert([...digest, ...utf8.encode(salt)]).bytes;
-    }
-    return base64UrlEncode(digest);
+  Future<void> _deleteLegacyPinMaterial() async {
+    await _secureStorage.delete(key: _pinSaltKey);
+    await _secureStorage.delete(key: _pinHashKey);
   }
 
   static String _formatDay(DateTime value) =>

@@ -34,7 +34,6 @@ Notes have no app-imposed character limit and grow vertically for longer reflect
 | --- | --- |
 | No app lock | Opens directly. |
 | Device security (recommended) | Uses Android-supported fingerprint, device PIN, or pattern through the system authentication prompt. |
-| Ritual PIN | Uses a separate four-digit PIN. After five failed attempts, input is blocked for 30 seconds. |
 
 The lock waits five seconds after the app is backgrounded. Brief notification-shade use therefore does not immediately lock. The system camera is a trusted interruption and does not cause an extra prompt on return. When lock is enabled, Android receives a privacy-shield signal so journal content is not left visible behind the lock surface.
 
@@ -49,7 +48,7 @@ The lock waits five seconds after the app is backgrounded. Brief notification-sh
 - **Import Ritual ZIP:** validates the archive before making database changes and skips duplicates.
 - **Delete all journal data:** destructive, confirmed removal of entries, photos, highlights, and streak history.
 
-Settings such as theme, reminder times, reflection choices, and onboarding completion use Android preferences. The Ritual PIN hash and salt use secure storage. Journal content uses the local SQLite database and private files.
+Settings such as theme, reminder times, reflection choices, and onboarding completion use Android preferences. Journal content uses the local SQLite database and private files.
 
 ## Share a reflection
 

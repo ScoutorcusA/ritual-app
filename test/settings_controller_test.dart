@@ -1,12 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:ritual/controllers/settings_controller.dart';
 import 'package:ritual/models/meal_entry.dart';
 import 'package:ritual/models/personal_intention.dart';
 import 'package:ritual/services/meal_reminder_service.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   setUp(() {
@@ -27,6 +29,25 @@ void main() {
     expect(reloaded.hungerScaleEnabled, isTrue);
     expect(reloaded.cravingScaleEnabled, isTrue);
     expect(reloaded.fullnessScaleEnabled, isFalse);
+  });
+
+  test('legacy Ritual PIN users migrate fail-closed to device lock', () async {
+    final preferences = SharedPreferencesAsync();
+    await preferences.setString('app_lock_mode', 'pin');
+    final secureStorage = _FakeSecureStorage();
+
+    final settings = SettingsController(
+      preferences: preferences,
+      secureStorage: secureStorage,
+    );
+    await settings.initialize();
+
+    expect(settings.lockMode, AppLockMode.device);
+    expect(await preferences.getString('app_lock_mode'), 'device');
+    expect(
+      secureStorage.deletedKeys,
+      containsAll(<String>['ritual_pin_salt', 'ritual_pin_hash']),
+    );
   });
 
   test(
@@ -129,6 +150,23 @@ void main() {
     );
     expect(reloaded.remindersSkippedDay, DateTime(2026, 8, 16));
   });
+}
+
+class _FakeSecureStorage extends FlutterSecureStorage {
+  final List<String> deletedKeys = <String>[];
+
+  @override
+  Future<void> delete({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    deletedKeys.add(key);
+  }
 }
 
 class _FakeReminderScheduler implements MealReminderScheduler {

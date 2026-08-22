@@ -15,14 +15,16 @@ void main() {
         InMemorySharedPreferencesAsync.empty();
   });
 
-  testWidgets('locks after a five-second inactive grace period', (
+  testWidgets('covers immediately and locks after five seconds away', (
     tester,
   ) async {
     final settings = _FakeSettingsController();
+    var now = DateTime(2026, 8, 21, 12);
     await tester.pumpWidget(
       MaterialApp(
         home: AppLockGate(
           settings: settings,
+          now: () => now,
           child: const Scaffold(body: Text('Private journal entry')),
         ),
       ),
@@ -33,16 +35,13 @@ void main() {
     settings.enableDeviceLockForTest();
     await tester.pump();
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
-    await tester.pump(const Duration(milliseconds: 4999));
-
-    expect(find.text('Private journal entry'), findsOneWidget);
-    expect(find.text('Your journal is private'), findsNothing);
-
-    await tester.pump(const Duration(milliseconds: 1));
+    await tester.pump();
 
     expect(find.text('Private journal entry'), findsNothing);
     expect(find.text('Your journal is private'), findsOneWidget);
+    expect(find.text('Unlock Ritual'), findsNothing);
 
+    now = now.add(const Duration(seconds: 5));
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
     await tester.pump();
@@ -55,10 +54,12 @@ void main() {
     tester,
   ) async {
     final settings = _FakeSettingsController();
+    var now = DateTime(2026, 8, 21, 12);
     await tester.pumpWidget(
       MaterialApp(
         home: AppLockGate(
           settings: settings,
+          now: () => now,
           child: const Scaffold(body: Text('Private journal entry')),
         ),
       ),
@@ -67,12 +68,45 @@ void main() {
     await tester.pump();
 
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
+
+    expect(find.text('Private journal entry'), findsNothing);
+    expect(find.text('Your journal is private'), findsOneWidget);
+
+    now = now.add(const Duration(milliseconds: 500));
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-    await tester.pump(const Duration(seconds: 1));
+    await tester.pump();
 
     expect(find.text('Private journal entry'), findsOneWidget);
     expect(find.text('Your journal is private'), findsNothing);
+  });
+
+  testWidgets('fails closed if the device clock moves backward while away', (
+    tester,
+  ) async {
+    final settings = _FakeSettingsController();
+    var now = DateTime(2026, 8, 21, 12);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AppLockGate(
+          settings: settings,
+          now: () => now,
+          child: const Scaffold(body: Text('Private journal entry')),
+        ),
+      ),
+    );
+    settings.enableDeviceLockForTest();
+    await tester.pump();
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await tester.pump();
+    now = now.subtract(const Duration(minutes: 1));
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Private journal entry'), findsNothing);
+    expect(find.text('Ritual is still locked.'), findsOneWidget);
   });
 
   testWidgets('does not lock while the trusted camera flow is active', (
@@ -149,10 +183,45 @@ void main() {
     settings.enableDeviceLockForTest();
     await tester.pump();
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
-    await tester.pump(const Duration(seconds: 5));
+    await tester.pump();
 
     expect(find.text('Private settings content'), findsNothing);
     expect(find.text('Your journal is private'), findsOneWidget);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+  });
+
+  testWidgets('drops private field focus and hides the keyboard immediately', (
+    tester,
+  ) async {
+    final settings = _FakeSettingsController();
+    final fieldFocus = FocusNode();
+    addTearDown(fieldFocus.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AppLockGate(
+          settings: settings,
+          child: Scaffold(body: TextField(focusNode: fieldFocus)),
+        ),
+      ),
+    );
+    settings.enableDeviceLockForTest();
+    await tester.pump();
+    await tester.showKeyboard(find.byType(TextField));
+
+    expect(fieldFocus.hasFocus, isTrue);
+    expect(tester.testTextInput.isVisible, isTrue);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await tester.pump();
+
+    expect(fieldFocus.hasFocus, isFalse);
+    expect(tester.testTextInput.isVisible, isFalse);
+    expect(find.byType(TextField), findsNothing);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
   });
 }
 

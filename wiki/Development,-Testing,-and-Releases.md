@@ -55,7 +55,7 @@ In Play Console:
 
 Internal testing can begin before the full store listing is finished. The first uploaded artifact permanently fixes the Play package name, so confirm `com.nishkamkhanna.ritual` before uploading.
 
-Test at least camera capture/return, notification permission and delivery, approximate/manual place entry, device/PIN lock lifecycle, ZIP export/import, PDF/CSV export, sharing, deletion, dark mode, upgrade from one Play build to the next, and behavior after reboot/time-zone changes.
+Test at least camera capture/return, notification permission and delivery, approximate/manual place entry, device-authentication lock lifecycle, ZIP export/import, PDF/CSV export, sharing, deletion, dark mode, upgrade from one Play build to the next, and behavior after reboot/time-zone changes.
 
 ### 5. Complete setup and run Closed testing
 

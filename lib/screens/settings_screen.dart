@@ -59,26 +59,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ? tr('Device lock is now protecting Ritual.')
             : tr('Device authentication is not set up or was canceled.'),
       );
-      return;
     }
-    final first = await _requestPin(tr('Create a Ritual PIN'));
-    if (!mounted || first == null) return;
-    final second = await _requestPin(tr('Confirm your PIN'));
-    if (!mounted || second == null) return;
-    if (first != second) {
-      _message(tr('Those PINs did not match. Nothing changed.'));
-      return;
-    }
-    await widget.settings.setPin(first);
-    if (mounted) _message(tr('Your Ritual PIN is ready.'));
-  }
-
-  Future<String?> _requestPin(String title) {
-    return showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => _PinSetupDialog(title: title),
-    );
   }
 
   Future<void> _exportJournal() async {
@@ -336,7 +317,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: Text(tr('Delete all journal data?')),
         content: Text(
           tr(
-            'This permanently deletes all {entries}, app-private photos, calendar highlights, and streak history from this device. Your theme, app lock, PIN, and reminder setting will stay.\n\nThis cannot be undone. Export first if you may want a copy.',
+            'This permanently deletes all {entries}, app-private photos, calendar highlights, and streak history from this device. Your theme, app lock, and reminder setting will stay.\n\nThis cannot be undone. Export first if you may want a copy.',
             values: {
               'entries': trPlural(
                 entryCount,
@@ -623,13 +604,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       subtitle: Text(tr('Fingerprint, device PIN, or pattern')),
                       secondary: Icon(Icons.fingerprint_rounded),
-                    ),
-                    Divider(height: 1),
-                    RadioListTile<AppLockMode>(
-                      value: AppLockMode.pin,
-                      title: Text(tr('Ritual PIN')),
-                      subtitle: Text(tr('A separate four-digit code')),
-                      secondary: Icon(Icons.pin_outlined),
                     ),
                   ],
                 ),
@@ -1322,56 +1296,6 @@ class _ArchivePasswordDialogState extends State<_ArchivePasswordDialog> {
         child: Text(tr('Cancel')),
       ),
       FilledButton(onPressed: _continue, child: Text(tr('Unlock'))),
-    ],
-  );
-}
-
-class _PinSetupDialog extends StatefulWidget {
-  const _PinSetupDialog({required this.title});
-
-  final String title;
-
-  @override
-  State<_PinSetupDialog> createState() => _PinSetupDialogState();
-}
-
-class _PinSetupDialogState extends State<_PinSetupDialog> {
-  final TextEditingController _controller = TextEditingController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: Text(widget.title),
-    content: TextField(
-      controller: _controller,
-      autofocus: true,
-      obscureText: true,
-      keyboardType: TextInputType.number,
-      maxLength: 4,
-      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-      decoration: InputDecoration(
-        labelText: tr('4-digit PIN'),
-        counterText: '',
-      ),
-    ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: Text(tr('Cancel')),
-      ),
-      FilledButton(
-        onPressed: () {
-          if (_controller.text.length == 4) {
-            Navigator.pop(context, _controller.text);
-          }
-        },
-        child: Text(tr('Continue')),
-      ),
     ],
   );
 }
